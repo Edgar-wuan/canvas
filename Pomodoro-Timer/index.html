@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>番茄钟 | 专注计时器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        work: '#ef4444',
+                        shortBreak: '#10b981',
+                        longBreak: '#3b82f6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                background: rgba(255, 255, 255, 0.7);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+            }
+            .progress-ring-circle {
+                transition: stroke-dashoffset 1s linear;
+                transform: rotate(-90deg);
+                transform-origin: 50% 50%;
+            }
+            .animate-pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+        }
+    </style>
+</head>
+<!-- 移除深色模式背景，统一清爽浅色背景 -->
+<body class="min-h-screen transition-colors duration-1000 bg-gradient-to-br from-red-50 to-orange-50" id="appBody">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- 头部：大标题完全居中 -->
+        <header class="text-center mb-12">
+            <!-- 核心修改：标题居中，专注按钮右上角绝对定位 -->
+            <div class="relative flex justify-center items-center mb-6">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-800">🍅 番茄钟</h1>
+                <button id="focusModeToggle" class="absolute right-0 p-3 rounded-full glass shadow-lg hover:shadow-xl transition-all duration-300">
+                    <span class="text-2xl">🎯</span>
+                </button>
+            </div>
+            <p class="text-lg text-gray-600">专注当下，高效工作</p>
+        </header>
+
+        <!-- 模式选择 -->
+        <div class="flex justify-center gap-4 mb-12">
+            <button id="workModeBtn" class="px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transition-all duration-300 bg-work text-white">
+                工作
+            </button>
+            <button id="shortBreakModeBtn" class="px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transition-all duration-300 glass text-gray-800">
+                短休息
+            </button>
+            <button id="longBreakModeBtn" class="px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transition-all duration-300 glass text-gray-800">
+                长休息
+            </button>
+        </div>
+
+        <!-- 计时器主体 -->
+        <div class="flex flex-col items-center mb-12">
+            <div class="relative w-80 h-80 md:w-96 md:h-96 mb-8">
+                <!-- 进度环 -->
+                <svg class="w-full h-full" viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="10" />
+                    <circle id="progressRing" cx="100" cy="100" r="90" fill="none" stroke="#ef4444" stroke-width="10" 
+                            stroke-linecap="round" class="progress-ring-circle" 
+                            stroke-dasharray="565.48" stroke-dashoffset="0" />
+                </svg>
+                
+                <!-- 时间显示 -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <div id="timerDisplay" class="text-7xl md:text-8xl font-bold text-gray-800 mb-4">
+                        25:00
+                    </div>
+                    <div id="statusDisplay" class="text-xl font-medium text-gray-600">
+                        准备开始
+                    </div>
+                </div>
+            </div>
+
+            <!-- 控制按钮 -->
+            <div class="flex gap-6 mb-8">
+                <button id="startBtn" class="px-10 py-5 rounded-2xl text-2xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 bg-work text-white">
+                    ▶️ 开始
+                </button>
+                <button id="pauseBtn" class="px-10 py-5 rounded-2xl text-2xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 glass text-gray-800" disabled>
+                    ⏸️ 暂停
+                </button>
+                <button id="resetBtn" class="px-10 py-5 rounded-2xl text-2xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 glass text-gray-800">
+                    🔄 重置
+                </button>
+            </div>
+        </div>
+
+        <!-- 统计信息 -->
+        <div class="glass rounded-3xl p-8 shadow-xl mb-8">
+            <h3 class="text-2xl font-semibold mb-6 text-gray-800 text-center">📊 今日统计</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                <div>
+                    <div id="todayPomodoros" class="text-5xl font-bold text-work mb-2">0</div>
+                    <p class="text-gray-600">完成番茄数</p>
+                </div>
+                <div>
+                    <div id="todayFocusTime" class="text-5xl font-bold text-work mb-2">0</div>
+                    <p class="text-gray-600">专注分钟</p>
+                </div>
+                <div>
+                    <div id="currentStreak" class="text-5xl font-bold text-work mb-2">0</div>
+                    <p class="text-gray-600">连续番茄</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设置面板 -->
+        <div class="glass rounded-3xl p-8 shadow-xl">
+            <h3 class="text-2xl font-semibold mb-6 text-gray-800 text-center">⚙️ 时间设置</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3 text-center">工作时长 (分钟)</label>
+                    <input type="number" id="workDuration" min="1" max="60" value="25" 
+                           class="w-full px-4 py-3 rounded-xl bg-white/50 border border-gray-200 text-center text-xl font-semibold focus:ring-2 focus:ring-work focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3 text-center">短休息 (分钟)</label>
+                    <input type="number" id="shortBreakDuration" min="1" max="30" value="5" 
+                           class="w-full px-4 py-3 rounded-xl bg-white/50 border border-gray-200 text-center text-xl font-semibold focus:ring-2 focus:ring-shortBreak focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3 text-center">长休息 (分钟)</label>
+                    <input type="number" id="longBreakDuration" min="5" max="60" value="15" 
+                           class="w-full px-4 py-3 rounded-xl bg-white/50 border border-gray-200 text-center text-xl font-semibold focus:ring-2 focus:ring-longBreak focus:border-transparent">
+                </div>
+            </div>
+            <div class="mt-8 text-center">
+                <button id="saveSettingsBtn" class="px-8 py-4 bg-gradient-to-r from-work to-orange-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+                    保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量（移除背景音相关变量）
+        let timerInterval;
+        let timeLeft = 25 * 60;
+        let isRunning = false;
+        let currentMode = 'work'; // work, shortBreak, longBreak
+        let pomodorosCompleted = 0;
+        let totalFocusMinutes = 0;
+        let currentStreak = 0;
+
+        // DOM元素（移除主题切换、背景音相关元素）
+        const appBody = document.getElementById('appBody');
+        const focusModeToggle = document.getElementById('focusModeToggle');
+        const workModeBtn = document.getElementById('workModeBtn');
+        const shortBreakModeBtn = document.getElementById('shortBreakModeBtn');
+        const longBreakModeBtn = document.getElementById('longBreakModeBtn');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const statusDisplay = document.getElementById('statusDisplay');
+        const progressRing = document.getElementById('progressRing');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const todayPomodoros = document.getElementById('todayPomodoros');
+        const todayFocusTime = document.getElementById('todayFocusTime');
+        const currentStreakDisplay = document.getElementById('currentStreak');
+        const workDurationInput = document.getElementById('workDuration');
+        const shortBreakDurationInput = document.getElementById('shortBreakDuration');
+        const longBreakDurationInput = document.getElementById('longBreakDuration');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+
+        // 初始化
+        function init() {
+            // 加载保存的数据
+            loadData();
+            updateDisplay();
+            updateStats();
+            
+            // 请求通知权限
+            if (Notification.permission !== 'granted') {
+                Notification.requestPermission();
+            }
+            
+            // 键盘快捷键
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    if (isRunning) {
+                        pauseTimer();
+                    } else {
+                        startTimer();
+                    }
+                }
+            });
+        }
+
+        // 专注模式
+        focusModeToggle.addEventListener('click', () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                document.documentElement.requestFullscreen();
+            }
+        });
+
+        // 模式切换
+        workModeBtn.addEventListener('click', () => switchMode('work'));
+        shortBreakModeBtn.addEventListener('click', () => switchMode('shortBreak'));
+        longBreakModeBtn.addEventListener('click', () => switchMode('longBreak'));
+
+        function switchMode(mode) {
+            currentMode = mode;
+            resetTimer();
+            
+            // 更新按钮样式
+            [workModeBtn, shortBreakModeBtn, longBreakModeBtn].forEach(btn => {
+                btn.className = 'px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transition-all duration-300 glass text-gray-800';
+            });
+            
+            const activeBtn = mode === 'work' ? workModeBtn : mode === 'shortBreak' ? shortBreakModeBtn : longBreakModeBtn;
+            activeBtn.className = `px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg transition-all duration-300 bg-${mode} text-white`;
+            
+            // 更新进度环颜色
+            progressRing.setAttribute('stroke', mode === 'work' ? '#ef4444' : mode === 'shortBreak' ? '#10b981' : '#3b82f6');
+            
+            // 更新背景颜色（移除深色模式）
+            appBody.className = `min-h-screen transition-colors duration-1000 bg-gradient-to-br ${
+                mode === 'work' ? 'from-red-50 to-orange-50' :
+                mode === 'shortBreak' ? 'from-green-50 to-teal-50' :
+                'from-blue-50 to-indigo-50'
+            }`;
+        }
+
+        // 计时器控制
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        function startTimer() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            statusDisplay.textContent = currentMode === 'work' ? '专注中...' : '休息中...';
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                updateProgressRing();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    timerComplete();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            if (!isRunning) return;
+            
+            clearInterval(timerInterval);
+            isRunning = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            statusDisplay.textContent = '已暂停';
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            
+            const durations = {
+                work: parseInt(workDurationInput.value) * 60,
+                shortBreak: parseInt(shortBreakDurationInput.value) * 60,
+                longBreak: parseInt(longBreakDurationInput.value) * 60
+            };
+            
+            timeLeft = durations[currentMode];
+            updateDisplay();
+            updateProgressRing();
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            statusDisplay.textContent = '准备开始';
+        }
+
+        function timerComplete() {
+            // 播放提示音（仅保留完成提示，移除背景音）
+            const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
+            audio.play();
+            
+            // 发送通知
+            if (Notification.permission === 'granted') {
+                new Notification('番茄钟提醒', {
+                    body: currentMode === 'work' ? '工作时间结束！休息一下吧' : '休息时间结束！继续工作吧',
+                    icon: '🍅'
+                });
+            }
+            
+            // 更新统计
+            if (currentMode === 'work') {
+                pomodorosCompleted++;
+                totalFocusMinutes += parseInt(workDurationInput.value);
+                currentStreak++;
+                saveData();
+                updateStats();
+                
+                // 每4个番茄后自动进入长休息
+                if (currentStreak % 4 === 0) {
+                    switchMode('longBreak');
+                } else {
+                    switchMode('shortBreak');
+                }
+            } else {
+                // 休息结束自动进入工作模式
+                switchMode('work');
+            }
+            
+            // 自动开始下一个计时器
+            setTimeout(() => {
+                if (!isRunning) {
+                    startTimer();
+                }
+            }, 3000);
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.title = `${timerDisplay.textContent} - 番茄钟`;
+        }
+
+        function updateProgressRing() {
+            const durations = {
+                work: parseInt(workDurationInput.value) * 60,
+                shortBreak: parseInt(shortBreakDurationInput.value) * 60,
+                longBreak: parseInt(longBreakDurationInput.value) * 60
+            };
+            
+            const totalTime = durations[currentMode];
+            const progress = (totalTime - timeLeft) / totalTime;
+            const circumference = 2 * Math.PI * 90;
+            const offset = circumference * (1 - progress);
+            
+            progressRing.style.strokeDashoffset = offset;
+        }
+
+        function updateStats() {
+            todayPomodoros.textContent = pomodorosCompleted;
+            todayFocusTime.textContent = totalFocusMinutes;
+            currentStreakDisplay.textContent = currentStreak;
+        }
+
+        // 保存和加载数据
+        function saveData() {
+            const today = new Date().toDateString();
+            const data = {
+                date: today,
+                pomodoros: pomodorosCompleted,
+                focusMinutes: totalFocusMinutes,
+                streak: currentStreak
+            };
+            localStorage.setItem('pomodoroData', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem('pomodoroData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                const today = new Date().toDateString();
+                
+                if (data.date === today) {
+                    pomodorosCompleted = data.pomodoros || 0;
+                    totalFocusMinutes = data.focusMinutes || 0;
+                    currentStreak = data.streak || 0;
+                } else {
+                    // 新的一天，重置统计
+                    pomodorosCompleted = 0;
+                    totalFocusMinutes = 0;
+                    currentStreak = 0;
+                }
+            }
+        }
+
+        // 保存设置
+        saveSettingsBtn.addEventListener('click', () => {
+            resetTimer();
+            alert('设置已保存！');
+        });
+
+        // 初始化应用
+        init();
+    </script>
+</body>
+</html>
