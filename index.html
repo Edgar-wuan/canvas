@@ -1,86 +1,343 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="zh-CN">
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1" />
-	<link rel="shortcut icon" href="picture.ico">
-	<title>导览</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勿安的作品导览</title>
+    <link rel="shortcut icon" href="picture.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0ea5e9',    // 天蓝色
+                        secondary: '#10b981',  // 祖母绿
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass {
+                background: rgba(255, 255, 255, 0.7);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+            }
+            .item-card {
+                transition: all 0.2s ease;
+            }
+            .item-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            }
+        }
+    </style>
 </head>
+<body class="min-h-screen bg-gradient-to-br from-sky-50 via-emerald-50 to-white">
+    <!-- 背景装饰 -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-sky-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-emerald-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+    </div>
 
-<body class="loading-process">
-	
-	<div id="contact" class="section-wrap section-contact">
-		<div class="section">
-			<div class="contact-content clearfix section-content">
-				<h1>导览</h1>
-				<div class="left">
-					<div class="contact-ways fade fade1">
-						<h2>勿安的全平台矩阵/联系勿安</h2>
-						<ul>
-							<li>微信公众号：<a target="_blank" href="https://edgar-wuan.github.io/articles/wechat.JPG">勿安喜欢说晚安</a></li>
-							<li>哔哩哔哩：<a target="_blank" href="https://space.bilibili.com/511239506">勿安喜欢说晚安</a></li>
-							<li>知乎：<a target="_blank" href="https://www.zhihu.com/people/edgar_wuan">勿安喜欢说晚安</a></li>
-							<li>小红书：<a target="_blank" href="https://www.xiaohongshu.com/user/profile/66bb595f000000001d020629">勿安喜欢说晚安</a></li>
-							<li>抖音：<a target="_blank" href="https://v.douyin.com/dmuawt04dZg/">勿安喜欢说晚安</a></li>
-							<li>QQ：<a target="_blank" href="https://qm.qq.com/q/irEoYtdfNY">Edgar_勿安</a></li>
-							<li>Email：<a target="_blank" href="mailto:evens_wuan@qq.com">evens_wuan</a></li>
-						</ul>
-						<h2>勿安搬运的静态页面</h2>
-						<ul>
-							<li>体验吸毒/喝醉幻视网页：<a target="_blank" href="https://edgar-wuan.github.io/Hallucination/">Hallucination</a></li>
-							<li>三角纽带效果：<a target="_blank" href="https://edgar-wuan.github.io/canvas/evan-you/index.html">evan-you</a></li>
-							<li>知乎登录注册页动态离子背景效果：<a target="_blank" href="https://edgar-wuan.github.io/canvas/zhihu/index.html">zhihu</a></li>
-							<li>人机交互五子棋完整功能实现：<a target="_blank" href="https://edgar-wuan.github.io/canvas/five-chess/index.html">five-chess</a></li>
-							<li>《是男人就下100层》小游戏：<a target="_blank"href="https://edgar-wuan.github.io/canvas/man-down100/index.html">man-down100</a></li>
-							<li>毛笔字书写田字格：<a target="_blank" href="https://edgar-wuan.github.io/canvas/brush/index.html">brush</a></li>
-                            <li>输入文字显示动画粒子特效：<a target="_blank" href="https://edgar-wuan.github.io/canvas/side-text/index.html">side-text</a></li>
-							<li>输入文字显示像素粒子特效：<a target="_blank"href="https://edgar-wuan.github.io/canvas/text-pixel/index.html">text-pixel</a></li>
-							<li>鼠标移动炫彩小球：<a target="_blank" href="https://edgar-wuan.github.io/canvas/globule/index.html">globule</a></li>
-							<li>2048：<a target="_blank" href="https://edgar-wuan.github.io/canvas/game2048/index.html">game2048</a></li>
-							<li>贪吃蛇：<a target="_blank" href="https://edgar-wuan.github.io/canvas/snake/index.html">snake</a></li>
-                            <li>看你有多色：<a target="_blank"href="https://edgar-wuan.github.io/canvas/look-def-color/index.html">look-def-color</a></li>
-							<li>坦克大战：<a target="_blank" href="https://edgar-wuan.github.io/canvas/tank/index.html">tank</a></li>
-                            <li>宇宙行星旋转特效：<a target="_blank" href="https://edgar-wuan.github.io/canvas/universe/index.html">universe</a></li>
-							<li>支付宝咻咻咻动画特效：<a target="_blank" href="https://edgar-wuan.github.io/canvas/alipay/index.html">alipay</a></li>
-							<li>程序员表白代码：<a target="_blank" href="https://edgar-wuan.github.io/canvas/love-time/index.html">love-time</a></li>
-                            <li>心形文字：<a target="_blank"href="https://edgar-wuan.github.io/canvas/heart/index.html">heart</a></li>
-							<li>照片墙：<a target="_blank" href="https://edgar-wuan.github.io/canvas/photo-wall/index.html">photo-wall</a></li>
-							<li>笨拙的小鸟：<a target="_blank" href="https://edgar-wuan.github.io/canvas/clumsy-bird/index.html">clumsy-bird</a></li>
-							<li>3D字母展示：<a target="_blank" href="https://edgar-wuan.github.io/canvas/3d-letter-text/index.html">3d-letter-text</a></li>
-							<li>火球发射游戏：<a target="_blank" href="https://edgar-wuan.github.io/canvas/fire-ball-shooter/index.html">fire-ball-shooter</a></li>
-							<li>快捷搜索应用：<a target="_blank" href="https://edgar-wuan.github.io/SeSearch/">eSearch</a></li>
-							<li>彩虹文字效果：<a target="_blank" href="https://edgar-wuan.github.io/canvas/path-text/index.html">path-text</a></li>
-							<li>音乐绝美风筝：<a target="_blank" href="https://edgar-wuan.github.io/canvas/kites/index.html">kites</a></li>
-							<li>卡牌解压页面：<a target="_blank" href="https://edgar-wuan.github.io/canvas/cards/index.html">cards</a></li>
-							<li>在线3D魔方：<a target="_blank" href="https://edgar-wuan.github.io/canvas/Magic Cube/index.html">Magic Cube</a></li>
-							<li>自定义随机转盘（选择困难者的福音）：<a target="_blank" href="https://edgar-wuan.github.io/Random-Carousel-Selector/">Random-Carousel-Selector</a></li>
-						</ul>
-						<h2>勿安（参与）制作的部分页面/友情链接</h2>
-						<ul>
-							<li>绝美浏览器初始效果1代：<a target="_blank" href="https://python-html.github.io/">python-html</a></li>
-							<li>勿安的个人主页：<a target="_blank" href="https://edgar-wuan.github.io/">edgar-wuan</a></li>
-							<li>勿安的文集：<a target="_blank" href="https://edgar-wuan.github.io/articles">articles</a></li>
-							<li>图片格式转换器：<a target="_blank" href="https://edgar-wuan.github.io/canvas/ifc/index.html">Image Format Converter</a></li>
-							<li>番茄钟：<a target="_blank" href="https://edgar-wuan.github.io/canvas/Pomodoro-Timer/index.html">Pomodoro-Timer</a></li>
-							<li>我们的钟：<a target="_blank" href="https://edgar-wuan.github.io/canvas/Our-Clock/">Our-Clock</a></li>
-							<li>浏览器初始页面二代：<a target="_blank" href="https://edgar-wuan.github.io/first-pages//">first-pages</a></li>
-							<li>html5电子黑板：<a target="_blank" href="https://edgar-wuan.github.io/point-board/">point-board</a></li>
-							<li>神奇代码岛图形化代码编辑软件：<a target="_blank" href="https://edgar-wuan.github.io/bloxeditor/">bloxeditor</a></li>
-							<li>抵制赌博网站宣传页：<a target="_blank" href="https://edgar-wuan.github.io/Gambling-websites-die/">Gambling-websites-die</a></li>
-							<li>2636个无版权图片链接：<a target="_blank" href="https://edgar-wuan.github.io/canvas/pictures.txt">pictures</a></li>
-							<li>图形化html编辑器：<a target="_blank" href="https://edgar-wuan.github.io/vfe/">Visual Front-end Editor</a></li>
-							<li>白日风信大图：<a target="_blank" href="https://edgar-wuan.github.io/canvas/3f08dec58ea5e41b38fc9217dff6cad7.jpeg">white-hyncinth</a></li>
-							<li>多谷：<a target="_blank" href="https://multigu.cn">multigu.cn</a></li>
-							<li>多谷api：<a target="_blank" href="https://api.multigu.cn">api.multigu.cn</a></li>
-							<li>点猫云盘：<a target="_blank" href="https://gitee.com/zwzhaowei/codemao-cloud">Codemao Cloud</a></li>
-						</ul>
-					</div>
+    <div class="relative container mx-auto px-4 py-12 max-w-7xl">
+        <!-- 头部 -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
+                勿安的作品导览
+            </h1>
+            <p class="text-lg text-gray-600 mb-8">他试着掂量自己的灵魂 看看它是不是一颗诗人的灵魂</p>
+            
+            <!-- 搜索框 -->
+            <div class="max-w-xl mx-auto">
+                <input type="text" id="searchInput" placeholder="🔍 搜索作品/平台..." 
+                       class="w-full px-6 py-4 rounded-2xl glass shadow-lg focus:outline-none focus:ring-2 focus:ring-primary text-center text-lg">
+            </div>
+        </header>
 
-				</div>
-			</div>
-		</div>
-	</div>
+        <!-- 1. 全平台矩阵 -->
+        <section class="mb-12">
+            <div class="glass rounded-3xl p-8 shadow-xl">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <span>🌐</span> 全平台矩阵 / 联系勿安
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="contactList">
+                    <a href="https://edgar-wuan.github.io/articles/wechat.JPG" target="_blank" class="item-card glass rounded-xl p-4 flex items-center gap-3">
+                        <span class="text-2xl">💬</span>
+                        <div>
+                            <div class="font-semibold text-gray-800">微信公众号</div>
+                            <div class="text-sm text-gray-500">勿安喜欢说晚安</div>
+                        </div>
+                    </a>
+                    <a href="https://space.bilibili.com/511239506" target="_blank" class="item-card glass rounded-xl p-4 flex items-center gap-3">
+                        <span class="text-2xl">📺</span>
+                        <div>
+                            <div class="font-semibold text-gray-800">哔哩哔哩</div>
+                            <div class="text-sm text-gray-500">勿安喜欢说晚安</div>
+                        </div>
+                    </a>
+                    <a href="https://www.zhihu.com/people/edgar_wuan" target="_blank" class="item-card glass rounded-xl p-4 flex items-center gap-3">
+                        <span class="text-2xl">✍️</span>
+                        <div>
+                            <div class="font-semibold text-gray-800">知乎</div>
+                            <div class="text-sm text-gray-500">勿安喜欢说晚安</div>
+                        </div>
+                    </a>
+                    <a href="https://www.xiaohongshu.com/user/profile/66bb595f000000001d020629" target="_blank" class="item-card glass rounded-xl p-4 flex items-center gap-3">
+                        <span class="text-2xl">📕</span>
+                        <div>
+                            <div class="font-semibold text-gray-800">小红书</div>
+                            <div class="text-sm text-gray-500">勿安喜欢说晚安</div>
+                        </div>
+                    </a>
+                    <a href="https://v.douyin.com/dmuawt04dZg/" target="_blank" class="item-card glass rounded-xl p-4 flex items-center gap-3">
+                        <span class="text-2xl">🎵</span>
+                        <div>
+                            <div class="font-semibold text-gray-800">抖音</div>
+                            <div class="text-sm text-gray-500">勿安喜欢说晚安</div>
+                        </div>
+                    </a>
+                    <a href="https://qm.qq.com/q/irEoYtdfNY" target="_blank" class="item-card glass rounded-xl p-4 flex items-center gap-3">
+                        <span class="text-2xl">🐧</span>
+                        <div>
+                            <div class="font-semibold text-gray-800">QQ</div>
+                            <div class="text-sm text-gray-500">Edgar_勿安</div>
+                        </div>
+                    </a>
+                    <a href="mailto:evens_wuan@qq.com" target="_blank" class="item-card glass rounded-xl p-4 flex items-center gap-3">
+                        <span class="text-2xl">📧</span>
+                        <div>
+                            <div class="font-semibold text-gray-800">Email</div>
+                            <div class="text-sm text-gray-500">evens_wuan@qq.com</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 搬运的静态页面 -->
+        <section class="mb-12">
+            <div class="glass rounded-3xl p-8 shadow-xl">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <span>📦</span> 搬运的静态页面
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="staticList">
+                    <a href="https://edgar-wuan.github.io/Hallucination/" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">Hallucination</div>
+                        <div class="text-sm text-gray-500">✨ 体验吸毒/喝醉幻视网页</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/evan-you/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">evan-you</div>
+                        <div class="text-sm text-gray-500">🔗 三角纽带效果</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/zhihu/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">zhihu</div>
+                        <div class="text-sm text-gray-500">⚡ 知乎登录页动态离子背景</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/five-chess/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">five-chess</div>
+                        <div class="text-sm text-gray-500">🎮 人机交互五子棋</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/man-down100/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">man-down100</div>
+                        <div class="text-sm text-gray-500">🎮 是男人就下100层</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/brush/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">brush</div>
+                        <div class="text-sm text-gray-500">🖌️ 毛笔字书写田字格</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/side-text/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">side-text</div>
+                        <div class="text-sm text-gray-500">✨ 文字动画粒子特效</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/text-pixel/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">text-pixel</div>
+                        <div class="text-sm text-gray-500">✨ 文字像素粒子特效</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/globule/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">globule</div>
+                        <div class="text-sm text-gray-500">✨ 鼠标移动炫彩小球</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/game2048/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">game2048</div>
+                        <div class="text-sm text-gray-500">🎮 2048小游戏</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/snake/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">snake</div>
+                        <div class="text-sm text-gray-500">🎮 贪吃蛇</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/look-def-color/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">look-def-color</div>
+                        <div class="text-sm text-gray-500">🎮 看你有多色</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/tank/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">tank</div>
+                        <div class="text-sm text-gray-500">🎮 坦克大战</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/universe/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">universe</div>
+                        <div class="text-sm text-gray-500">✨ 宇宙行星旋转特效</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/alipay/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">alipay</div>
+                        <div class="text-sm text-gray-500">✨ 支付宝咻咻咻动画</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/love-time/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">love-time</div>
+                        <div class="text-sm text-gray-500">❤️ 程序员表白代码</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/heart/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">heart</div>
+                        <div class="text-sm text-gray-500">❤️ 心形文字</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/photo-wall/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">photo-wall</div>
+                        <div class="text-sm text-gray-500">🖼️ 照片墙</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/clumsy-bird/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">clumsy-bird</div>
+                        <div class="text-sm text-gray-500">🎮 笨拙的小鸟</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/3d-letter-text/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">3d-letter-text</div>
+                        <div class="text-sm text-gray-500">✨ 3D字母展示</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/fire-ball-shooter/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">fire-ball-shooter</div>
+                        <div class="text-sm text-gray-500">🎮 火球发射游戏</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/SeSearch/" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">eSearch</div>
+                        <div class="text-sm text-gray-500">🔍 快捷搜索应用</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/path-text/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">path-text</div>
+                        <div class="text-sm text-gray-500">✨ 彩虹文字效果</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/kites/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">kites</div>
+                        <div class="text-sm text-gray-500">🎵 音乐绝美风筝</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/cards/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">cards</div>
+                        <div class="text-sm text-gray-500">🃏 卡牌解压页面</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/Magic Cube/index.html" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">Magic Cube</div>
+                        <div class="text-sm text-gray-500">🧊 在线3D魔方</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/Random-Carousel-Selector/" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">Random-Carousel-Selector</div>
+                        <div class="text-sm text-gray-500">🎯 自定义随机转盘</div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 原创作品 & 友情链接 -->
+        <section class="mb-12">
+            <div class="glass rounded-3xl p-8 shadow-xl">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <span>🚀</span> 原创作品 & 友情链接
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="originalList">
+                    <a href="https://python-html.github.io/" target="_blank" class="item-card glass rounded-xl p-4 border-l-4 border-primary">
+                        <div class="font-semibold text-gray-800 mb-1">python-html</div>
+                        <div class="text-sm text-gray-500">🏠 绝美浏览器初始页1代</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/" target="_blank" class="item-card glass rounded-xl p-4 border-l-4 border-primary">
+                        <div class="font-semibold text-gray-800 mb-1">edgar-wuan</div>
+                        <div class="text-sm text-gray-500">🏠 勿安的个人主页</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/articles" target="_blank" class="item-card glass rounded-xl p-4 border-l-4 border-primary">
+                        <div class="font-semibold text-gray-800 mb-1">articles</div>
+                        <div class="text-sm text-gray-500">📝 勿安的文集</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/ifc/index.html" target="_blank" class="item-card glass rounded-xl p-4 border-l-4 border-primary">
+                        <div class="font-semibold text-gray-800 mb-1">Image Format Converter</div>
+                        <div class="text-sm text-gray-500">🛠️ 图片格式转换器</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/Pomodoro-Timer/index.html" target="_blank" class="item-card glass rounded-xl p-4 border-l-4 border-primary">
+                        <div class="font-semibold text-gray-800 mb-1">Pomodoro-Timer</div>
+                        <div class="text-sm text-gray-500">⏰ 番茄钟专注计时器</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/Our-Clock/" target="_blank" class="item-card glass rounded-xl p-4 border-l-4 border-primary">
+                        <div class="font-semibold text-gray-800 mb-1">Our-Clock</div>
+                        <div class="text-sm text-gray-500">⏰ 我们的钟</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/first-pages//" target="_blank" class="item-card glass rounded-xl p-4 border-l-4 border-primary">
+                        <div class="font-semibold text-gray-800 mb-1">first-pages</div>
+                        <div class="text-sm text-gray-500">🏠 浏览器初始页2代</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/point-board/" target="_blank" class="item-card glass rounded-xl p-4 border-l-4 border-primary">
+                        <div class="font-semibold text-gray-800 mb-1">point-board</div>
+                        <div class="text-sm text-gray-500">🖌️ HTML5电子黑板</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/bloxeditor/" target="_blank" class="item-card glass rounded-xl p-4 border-l-4 border-primary">
+                        <div class="font-semibold text-gray-800 mb-1">bloxeditor</div>
+                        <div class="text-sm text-gray-500">🧩 神奇代码岛图形化编辑器</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/Gambling-websites-die/" target="_blank" class="item-card glass rounded-xl p-4 border-l-4 border-primary">
+                        <div class="font-semibold text-gray-800 mb-1">Gambling-websites-die</div>
+                        <div class="text-sm text-gray-500">🚫 抵制赌博网站宣传页</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/pictures.txt" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">pictures</div>
+                        <div class="text-sm text-gray-500">🖼️ 2636个无版权图片链接</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/vfe/" target="_blank" class="item-card glass rounded-xl p-4 border-l-4 border-primary">
+                        <div class="font-semibold text-gray-800 mb-1">Visual Front-end Editor</div>
+                        <div class="text-sm text-gray-500">🧩 图形化HTML编辑器</div>
+                    </a>
+                    <a href="https://edgar-wuan.github.io/canvas/3f08dec58ea5e41b38fc9217dff6cad7.jpeg" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">white-hyncinth</div>
+                        <div class="text-sm text-gray-500">🖼️ 白日风信大图</div>
+                    </a>
+                    <a href="https://multigu.cn" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">multigu.cn</div>
+                        <div class="text-sm text-gray-500">🔗 多谷</div>
+                    </a>
+                    <a href="https://api.multigu.cn" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">api.multigu.cn</div>
+                        <div class="text-sm text-gray-500">🔗 多谷API</div>
+                    </a>
+                    <a href="https://gitee.com/zwzhaowei/codemao-cloud" target="_blank" class="item-card glass rounded-xl p-4">
+                        <div class="font-semibold text-gray-800 mb-1">Codemao Cloud</div>
+                        <div class="text-sm text-gray-500">☁️ 点猫云盘</div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 页脚 -->
+        <footer class="text-center text-gray-500 py-8">
+            <p>© 2026 勿安的作品导览 | 保留所有权利</p>
+        </footer>
+    </div>
+
+    <script>
+        // 搜索功能
+        const searchInput = document.getElementById('searchInput');
+        const allItems = document.querySelectorAll('.item-card');
+
+        searchInput.addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase().trim();
+            
+            allItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(keyword)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
-
 </html>
