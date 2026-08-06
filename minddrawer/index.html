@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>在线思维导图工具</title>
+  <style>
+    :root {
+      --bg-color: #f5f7fa;
+      --panel-bg: #ffffff;
+      --border-color: #e4e7ed;
+      --text-primary: #303133;
+      --text-secondary: #606266;
+      --text-placeholder: #909399;
+      --node-default-fill: #ffffff;
+      --node-default-color: #303133;
+      --node-stroke: #dcdfe6;
+      --line-color: #c0c4cc;
+      --primary-color: #409eff;
+      --primary-light: #ecf5ff;
+      --hover-bg: #f5f7fa;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; 
+      overflow: hidden; 
+      height: 100vh; 
+      background: var(--bg-color);
+      color: var(--text-primary);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* 顶部工具栏 */
+    .toolbar {
+      height: 50px;
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+      position: relative;
+      z-index: 100;
+      flex-wrap: wrap;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .toolbar button, .toolbar select {
+      padding: 6px 12px;
+      border: 1px solid var(--border-color);
+      background: var(--panel-bg);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      color: var(--text-secondary);
+      font-family: inherit;
+    }
+    .toolbar button:hover {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+      background: var(--primary-light);
+    }
+    .toolbar button:disabled {
+      color: var(--text-placeholder);
+      border-color: var(--border-color);
+      background: var(--panel-bg);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .toolbar .divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border-color);
+      margin: 0 4px;
+    }
+
+    /* 主体布局 */
+    .main-container {
+      display: flex;
+      height: calc(100vh - 50px);
+    }
+
+    /* 侧边栏通用样式 */
+    .sidebar {
+      width: 240px;
+      background: var(--panel-bg);
+      border-right: 1px solid var(--border-color);
+      overflow-y: auto;
+      padding: 12px 0;
+      flex-shrink: 0;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .sidebar.right-sidebar {
+      border-right: none;
+      border-left: 1px solid var(--border-color);
+      padding: 16px;
+    }
+    .sidebar-title {
+      padding: 0 16px 8px;
+      font-size: 13px;
+      color: var(--text-placeholder);
+      font-weight: 500;
+      border-bottom: 1px solid var(--hover-bg);
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+    }
+    .right-sidebar .sidebar-title {
+      padding: 0 0 8px;
+      margin-bottom: 12px;
+    }
+    .property-group {
+      margin-bottom: 20px;
+    }
+    .property-group h4 {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .property-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .property-row label {
+      color: var(--text-secondary);
+    }
+    .property-row input[type="color"] {
+      width: 32px;
+      height: 24px;
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      cursor: pointer;
+      background: none;
+    }
+    .property-row input[type="number"] {
+      width: 60px;
+      padding: 3px 6px;
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 12px;
+      background: var(--panel-bg);
+      color: var(--text-primary);
+    }
+    .reset-style-btn {
+      width: 100%;
+      padding: 4px;
+      font-size: 12px;
+      border: 1px solid var(--border-color);
+      background: var(--panel-bg);
+      border-radius: 3px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .reset-style-btn:hover {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    /* 标签样式 */
+    .tag-input-group {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .tag-input-group input {
+      flex: 1;
+      padding: 4px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 12px;
+      background: var(--panel-bg);
+      color: var(--text-primary);
+      outline: none;
+    }
+    .tag-input-group input:focus {
+      border-color: var(--primary-color);
+    }
+    .tag-input-group button {
+      padding: 4px 8px;
+      border: 1px solid var(--border-color);
+      background: var(--panel-bg);
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .tag-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 11px;
+      color: #fff;
+      cursor: default;
+    }
+    .tag-item .tag-close {
+      cursor: pointer;
+      font-size: 10px;
+      opacity: 0.8;
+    }
+    .tag-item .tag-close:hover {
+      opacity: 1;
+    }
+
+    /* 备注文本域 */
+    .note-textarea {
+      width: 100%;
+      height: 100px;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+      resize: vertical;
+      background: var(--panel-bg);
+      color: var(--text-primary);
+      outline: none;
+    }
+    .note-textarea:focus {
+      border-color: var(--primary-color);
+    }
+
+    /* 大纲面板 */
+    .outline-item {
+      padding: 6px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .outline-item:hover { background: var(--hover-bg); }
+    .outline-item.selected { background: var(--primary-light); color: var(--primary-color); }
+    .outline-item .collapse-btn {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: var(--text-placeholder);
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .outline-item .text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* 画布容器 */
+    .canvas-container {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      cursor: grab;
+    }
+    .canvas-container:active { cursor: grabbing; }
+    #mindmap-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* 节点样式 */
+    .node-rect {
+      fill: var(--node-default-fill);
+      stroke: var(--node-stroke);
+      stroke-width: 1.5;
+      rx: 6px;
+      ry: 6px;
+      transition: stroke 0.2s, fill 0.2s;
+    }
+    .node.selected .node-rect {
+      stroke: var(--primary-color);
+      filter: drop-shadow(0 2px 4px rgba(64, 158, 255, 0.15));
+    }
+    .node-text {
+      font-size: 14px;
+      fill: var(--node-default-color);
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+      user-select: none;
+    }
+    .node-tags {
+      display: flex;
+      gap: 2px;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .node-tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .collapse-icon {
+      fill: var(--text-placeholder);
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .collapse-circle {
+      fill: var(--panel-bg);
+      stroke: var(--node-stroke);
+      stroke-width: 1;
+      cursor: pointer;
+    }
+
+    /* 连线样式 */
+    .connection-line {
+      fill: none;
+      stroke: var(--line-color);
+      stroke-width: 1.5;
+    }
+
+    /* 编辑输入框 */
+    .node-input {
+      width: 100%;
+      height: 100%;
+      border: none;
+      outline: none;
+      text-align: center;
+      font-size: 14px;
+      background: transparent;
+      font-family: inherit;
+      color: inherit;
+    }
+
+    /* 拖拽提示线 */
+    .drop-indicator {
+      position: absolute;
+      height: 2px;
+      background: var(--primary-color);
+      border-radius: 1px;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+    }
+    .drop-indicator.insert-child {
+      height: auto;
+      border: 2px dashed var(--primary-color);
+      background: transparent;
+      border-radius: 6px;
+    }
+
+    /* 拖拽虚影 */
+    .drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      opacity: 0.7;
+      z-index: 2000;
+      background: var(--node-default-fill);
+      border: 1px solid var(--primary-color);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--node-default-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: none;
+    }
+
+    /* 底部提示 */
+    .tip {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      color: var(--text-placeholder);
+      font-size: 12px;
+      background: rgba(255,255,255,0.9);
+      padding: 8px 12px;
+      border-radius: 4px;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .empty-tip {
+      color: var(--text-placeholder);
+      font-size: 12px;
+      text-align: center;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button id="btn-undo" title="撤销 (Ctrl+Z)">撤销</button>
+    <button id="btn-redo" title="重做 (Ctrl+Y)">重做</button>
+    <div class="divider"></div>
+    <button id="btn-add-child" title="添加子节点 (Tab)">子节点</button>
+    <button id="btn-add-sibling" title="添加同级节点 (Enter)">同级节点</button>
+    <button id="btn-delete" title="删除节点 (Delete)">删除</button>
+    <button id="btn-collapse" title="折叠/展开 (空格)">折叠</button>
+    <div class="divider"></div>
+    <button id="btn-center">居中画布</button>
+    <div class="divider"></div>
+    <select id="theme-select">
+      <option value="light">浅色主题</option>
+      <option value="dark">深色主题</option>
+      <option value="retro">复古护眼</option>
+      <option value="fresh">清新蓝</option>
+    </select>
+    <div class="divider"></div>
+    <button id="btn-export-json">导出JSON</button>
+    <button id="btn-export-md">导出Markdown</button>
+    <button id="btn-export-png">导出PNG</button>
+    <button id="btn-export-svg">导出SVG</button>
+    <div class="divider"></div>
+    <button id="btn-reset">重置示例</button>
+  </div>
+
+  <div class="main-container">
+    <!-- 左侧大纲 -->
+    <div class="sidebar">
+      <div class="sidebar-title">大纲视图</div>
+      <div id="outline-container"></div>
+    </div>
+
+    <!-- 中间画布 -->
+    <div class="canvas-container" id="canvas-container">
+      <svg id="mindmap-svg">
+        <g id="canvas-group">
+          <g id="lines-group"></g>
+          <g id="nodes-group"></g>
+        </g>
+      </svg>
+      <div class="drop-indicator" id="drop-indicator"></div>
+      <div class="drag-ghost" id="drag-ghost"></div>
+      <div class="tip">双击编辑 | 拖拽节点调整层级 | 滚轮缩放 | 空白处拖动画布</div>
+    </div>
+
+    <!-- 右侧属性面板 -->
+    <div class="sidebar right-sidebar">
+      <div class="sidebar-title">节点属性</div>
+      <div id="property-panel">
+        <div class="empty-tip">请选择一个节点</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== 全局配置 ==========
+    const NODE_WIDTH = 140;
+    const NODE_HEIGHT = 50;
+    const H_GAP = 80;
+    const V_GAP = 20;
+    const MAX_HISTORY = 20;
+    const TAG_COLORS = ['#f56c6c', '#e6a23c', '#67c23a', '#409eff', '#909399', '#9b59b6', '#1abc9c', '#e91e63'];
+
+    // ========== 主题配置 ==========
+    const THEMES = {
+      light: {
+        '--bg-color': '#f5f7fa',
+        '--panel-bg': '#ffffff',
+        '--border-color': '#e4e7ed',
+        '--text-primary': '#303133',
+        '--text-secondary': '#606266',
+        '--text-placeholder': '#909399',
+        '--node-default-fill': '#ffffff',
+        '--node-default-color': '#303133',
+        '--node-stroke': '#dcdfe6',
+        '--line-color': '#c0c4cc',
+        '--primary-color': '#409eff',
+        '--primary-light': '#ecf5ff',
+        '--hover-bg': '#f5f7fa'
+      },
+      dark: {
+        '--bg-color': '#1a1a2e',
+        '--panel-bg': '#16213e',
+        '--border-color': '#2a3a5a',
+        '--text-primary': '#e4e7ed',
+        '--text-secondary': '#c0c4cc',
+        '--text-placeholder': '#909399',
+        '--node-default-fill': '#1f2d45',
+        '--node-default-color': '#e4e7ed',
+        '--node-stroke': '#3a4a6a',
+        '--line-color': '#4a5a7a',
+        '--primary-color': '#5cadff',
+        '--primary-light': '#1e3a5f',
+        '--hover-bg': '#24344d'
+      },
+      retro: {
+        '--bg-color': '#f7f3e9',
+        '--panel-bg': '#faf6ed',
+        '--border-color': '#e8e0c8',
+        '--text-primary': '#5c4b37',
+        '--text-secondary': '#7d6b56',
+        '--text-placeholder': '#a89880',
+        '--node-default-fill': '#fdfaf0',
+        '--node-default-color': '#5c4b37',
+        '--node-stroke': '#d8c8a8',
+        '--line-color': '#c8b898',
+        '--primary-color': '#c88b3a',
+        '--primary-light': '#f5e6d0',
+        '--hover-bg': '#f0e8d8'
+      },
+      fresh: {
+        '--bg-color': '#f0f9ff',
+        '--panel-bg': '#ffffff',
+        '--border-color': '#d1e8ff',
+        '--text-primary': '#1e3a5f',
+        '--text-secondary': '#3a5a7f',
+        '--text-placeholder': '#7a9abc',
+        '--node-default-fill': '#f0f9ff',
+        '--node-default-color': '#1e3a5f',
+        '--node-stroke': '#b8d8ff',
+        '--line-color': '#9ac8f8',
+        '--primary-color': '#2a82e4',
+        '--primary-light': '#e0f2ff',
+        '--hover-bg': '#e6f4ff'
+      }
+    };
+
+    // ========== 全局状态 ==========
+    let currentTheme = 'light';
+    let mindmapData = createNode('中心主题', true);
+    mindmapData.children = [
+      createNode('分支主题 1', false, [
+        createNode('子主题 1-1'),
+        createNode('子主题 1-2')
+      ]),
+      createNode('分支主题 2', false, [
+        createNode('子主题 2-1')
+      ]),
+      createNode('拖拽我调整位置', false, [], ['示例标签'])
+    ];
+
+    let selectedNodeId = mindmapData.id;
+    let historyStack = [];
+    let historyIndex = -1;
+    let transform = { x: 0, y: 0, scale: 1 };
+    let isCanvasDragging = false;
+    let dragStart = { x: 0, y: 0 };
+    let isEditing = false;
+
+    // 节点拖拽状态
+    let nodeDragState = {
+      isDragging: false,
+      nodeId: null,
+      startX: 0,
+      startY: 0,
+      hasMoved: false
+    };
+
+    // DOM 元素
+    const svg = document.getElementById('mindmap-svg');
+    const canvasGroup = document.getElementById('canvas-group');
+    const nodesGroup = document.getElementById('nodes-group');
+    const linesGroup = document.getElementById('lines-group');
+    const canvasContainer = document.getElementById('canvas-container');
+    const outlineContainer = document.getElementById('outline-container');
+    const propertyPanel = document.getElementById('property-panel');
+    const dropIndicator = document.getElementById('drop-indicator');
+    const dragGhost = document.getElementById('drag-ghost');
+    const themeSelect = document.getElementById('theme-select');
+
+    // ========== 工具函数 ==========
+    function generateId() {
+      return 'node_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    function deepClone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function createNode(text, isRoot = false, children = [], tags = []) {
+      return {
+        id: generateId(),
+        text: text,
+        children: children,
+        collapsed: false,
+        style: {
+          fill: '',
+          color: '',
+          fontSize: 14
+        },
+        note: '',
+        tags: tags
+      };
+    }
+
+    // 判断节点是否为目标节点的后代
+    function isDescendant(ancestorNode, targetId) {
+      if (ancestorNode.id === targetId) return true;
+      if (ancestorNode.children) {
+        return ancestorNode.children.some(child => isDescendant(child, targetId));
+      }
+      return false;
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem('mindmap_data', JSON.stringify(mindmapData));
+      localStorage.setItem('mindmap_theme', currentTheme);
+    }
+
+    function loadFromLocalStorage() {
+      const savedData = localStorage.getItem('mindmap_data');
+      const savedTheme = localStorage.getItem('mindmap_theme');
+      
+      if (savedData) {
+        try {
+          mindmapData = JSON.parse(savedData);
+          selectedNodeId = mindmapData.id;
+        } catch (e) {
+          console.error('加载本地数据失败', e);
+        }
+      }
+      
+      if (savedTheme && THEMES[savedTheme]) {
+        currentTheme = savedTheme;
+        themeSelect.value = savedTheme;
+      }
+    }
+
+    // ========== 主题系统 ==========
+    function applyTheme(themeName) {
+      const theme = THEMES[themeName];
+      if (!theme) return;
+      
+      Object.keys(theme).forEach(key => {
+        document.documentElement.style.setProperty(key, theme[key]);
+      });
+      
+      currentTheme = themeName;
+      saveToLocalStorage();
+    }
+
+    // ========== 撤销重做系统 ==========
+    function saveHistory() {
+      historyStack = historyStack.slice(0, historyIndex + 1);
+      historyStack.push(deepClone(mindmapData));
+      
+      if (historyStack.length > MAX_HISTORY) {
+        historyStack.shift();
+      } else {
+        historyIndex++;
+      }
+      
+      updateHistoryButtons();
+      saveToLocalStorage();
+    }
+
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        mindmapData = deepClone(historyStack[historyIndex]);
+        selectedNodeId = mindmapData.id;
+        render();
+        saveToLocalStorage();
+        updateHistoryButtons();
+      }
+    }
+
+    function redo() {
+      if (historyIndex < historyStack.length - 1) {
+        historyIndex++;
+        mindmapData = deepClone(historyStack[historyIndex]);
+        selectedNodeId = mindmapData.id;
+        render();
+        saveToLocalStorage();
+        updateHistoryButtons();
+      }
+    }
+
+    function updateHistoryButtons() {
+      document.getElementById('btn-undo').disabled = historyIndex <= 0;
+      document.getElementById('btn-redo').disabled = historyIndex >= historyStack.length - 1;
+    }
+
+    // ========== 核心布局算法 ==========
+    function calculateLayout(node, x = 0, y = 0) {
+      node.x = x;
+      node.y = y;
+      node.width = NODE_WIDTH;
+      node.height = NODE_HEIGHT;
+
+      if (!node.children || node.children.length === 0 || node.collapsed) {
+        node.subtreeHeight = NODE_HEIGHT;
+        return node.subtreeHeight;
+      }
+
+      const childX = x + NODE_WIDTH + H_GAP;
+      const childHeights = node.children.map(child => calculateLayout(child, childX, 0));
+      
+      const totalHeight = childHeights.reduce((sum, h) => sum + h, 0) 
+                        + (node.children.length - 1) * V_GAP;
+
+      let startY = y - totalHeight / 2 + NODE_HEIGHT / 2;
+      node.children.forEach((child, index) => {
+        child.y = startY;
+        startY += childHeights[index] + V_GAP;
+      });
+
+      node.subtreeHeight = totalHeight;
+      return totalHeight;
+    }
+
+    // ========== 渲染主函数 ==========
+    function render() {
+      calculateLayout(mindmapData, 0, 0);
+      
+      canvasGroup.setAttribute(
+        'transform', 
+        `translate(${transform.x}, ${transform.y}) scale(${transform.scale})`
+      );
+
+      nodesGroup.innerHTML = '';
+      linesGroup.innerHTML = '';
+
+      renderNodeRecursive(mindmapData);
+      renderOutline();
+      renderPropertyPanel();
+    }
+
+    function renderNodeRecursive(node) {
+      if (node.children && node.children.length > 0 && !node.collapsed) {
+        node.children.forEach(child => {
+          renderConnection(node, child);
+          renderNodeRecursive(child);
+        });
+      }
+
+      const nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      nodeGroup.classList.add('node');
+      nodeGroup.setAttribute('data-id', node.id);
+      if (node.id === selectedNodeId) nodeGroup.classList.add('selected');
+      nodeGroup.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+
+      // 节点背景
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.classList.add('node-rect');
+      rect.setAttribute('width', NODE_WIDTH);
+      rect.setAttribute('height', NODE_HEIGHT);
+      rect.setAttribute('y', -NODE_HEIGHT / 2);
+      if (node.style.fill) rect.setAttribute('fill', node.style.fill);
+      nodeGroup.appendChild(rect);
+
+      // 节点文字
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.classList.add('node-text');
+      text.setAttribute('x', NODE_WIDTH / 2);
+      text.setAttribute('y', -6);
+      text.setAttribute('font-size', node.style.fontSize || 14);
+      if (node.style.color) text.setAttribute('fill', node.style.color);
+      text.textContent = node.text.length > 12 ? node.text.slice(0, 12) + '...' : node.text;
+      nodeGroup.appendChild(text);
+
+      // 节点标签圆点
+      if (node.tags && node.tags.length > 0) {
+        const tagsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        tagsGroup.setAttribute('transform', `translate(${NODE_WIDTH / 2}, 12)`);
+        
+        const displayTags = node.tags.slice(0, 5);
+        const totalWidth = displayTags.length * 8 - 2;
+        let startX = -totalWidth / 2;
+        
+        displayTags.forEach((tag, index) => {
+          const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          dot.setAttribute('cx', startX + index * 8);
+          dot.setAttribute('cy', 0);
+          dot.setAttribute('r', 3);
+          dot.setAttribute('fill', TAG_COLORS[index % TAG_COLORS.length]);
+          tagsGroup.appendChild(dot);
+        });
+        
+        nodeGroup.appendChild(tagsGroup);
+      }
+
+      // 折叠按钮
+      if (node.children && node.children.length > 0) {
+        const collapseGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        collapseGroup.setAttribute('transform', `translate(${NODE_WIDTH}, 0)`);
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.classList.add('collapse-circle');
+        circle.setAttribute('r', 8);
+        circle.setAttribute('cx', 0);
+        circle.setAttribute('cy', 0);
+        collapseGroup.appendChild(circle);
+
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        icon.classList.add('collapse-icon');
+        icon.setAttribute('x', 0);
+        icon.setAttribute('y', 4);
+        icon.setAttribute('text-anchor', 'middle');
+        icon.textContent = node.collapsed ? '+' : '−';
+        collapseGroup.appendChild(icon);
+
+        collapseGroup.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleCollapse(node.id);
+        });
+
+        nodeGroup.appendChild(collapseGroup);
+      }
+
+      // 节点事件
+      nodeGroup.addEventListener('mousedown', (e) => {
+        if (e.button === 0) {
+          selectNode(node.id);
+          startNodeDrag(e, node.id);
+        }
+      });
+
+      nodeGroup.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        startEditNode(node.id);
+      });
+
+      nodesGroup.appendChild(nodeGroup);
+    }
+
+    // 渲染贝塞尔曲线连线
+    function renderConnection(parent, child) {
+      const x1 = parent.x + NODE_WIDTH;
+      const y1 = parent.y;
+      const x2 = child.x;
+      const y2 = child.y;
+      const controlX = (x1 + x2) / 2;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.classList.add('connection-line');
+      path.setAttribute(
+        'd', 
+        `M ${x1} ${y1} C ${controlX} ${y1}, ${controlX} ${y2}, ${x2} ${y2}`
+      );
+      linesGroup.appendChild(path);
+    }
+
+    // ========== 大纲面板渲染 ==========
+    function renderOutline() {
+      outlineContainer.innerHTML = '';
+      renderOutlineItem(mindmapData, 0);
+    }
+
+    function renderOutlineItem(node, level) {
+      const item = document.createElement('div');
+      item.classList.add('outline-item');
+      if (node.id === selectedNodeId) item.classList.add('selected');
+      item.style.paddingLeft = `${16 + level * 16}px`;
+
+      const collapseBtn = document.createElement('span');
+      collapseBtn.classList.add('collapse-btn');
+      if (node.children && node.children.length > 0) {
+        collapseBtn.textContent = node.collapsed ? '▶' : '▼';
+        collapseBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleCollapse(node.id);
+        });
+      }
+      item.appendChild(collapseBtn);
+
+      const text = document.createElement('span');
+      text.classList.add('text');
+      text.textContent = node.text;
+      item.appendChild(text);
+
+      item.addEventListener('click', () => {
+        selectNode(node.id);
+        centerOnNode(node.id);
+      });
+
+      outlineContainer.appendChild(item);
+
+      if (node.children && node.children.length > 0 && !node.collapsed) {
+        node.children.forEach(child => renderOutlineItem(child, level + 1));
+      }
+    }
+
+    // ========== 属性面板渲染 ==========
+    function renderPropertyPanel() {
+      const node = findNode(mindmapData, selectedNodeId);
+      if (!node) {
+        propertyPanel.innerHTML = '<div class="empty-tip">请选择一个节点</div>';
+        return;
+      }
+
+      propertyPanel.innerHTML = `
+        <div class="property-group">
+          <h4>节点样式</h4>
+          <div class="property-row">
+            <label>背景颜色</label>
+            <input type="color" id="style-fill" value="${node.style.fill || '#ffffff'}">
+          </div>
+          <div class="property-row">
+            <label>文字颜色</label>
+            <input type="color" id="style-color" value="${node.style.color || '#303133'}">
+          </div>
+          <div class="property-row">
+            <label>字体大小</label>
+            <input type="number" id="style-fontsize" value="${node.style.fontSize || 14}" min="10" max="24">
+          </div>
+          <button class="reset-style-btn" id="btn-reset-style">重置为默认样式</button>
+        </div>
+
+        <div class="property-group">
+          <h4>标签</h4>
+          <div class="tag-input-group">
+            <input type="text" id="tag-input" placeholder="输入标签名称">
+            <button id="btn-add-tag">添加</button>
+          </div>
+          <div class="tag-list" id="tag-list"></div>
+        </div>
+
+        <div class="property-group">
+          <h4>备注</h4>
+          <textarea class="note-textarea" id="note-input" placeholder="输入节点备注信息...">${node.note || ''}</textarea>
+        </div>
+      `;
+
+      // 渲染标签列表
+      const tagList = document.getElementById('tag-list');
+      node.tags.forEach((tag, index) => {
+        const tagEl = document.createElement('div');
+        tagEl.className = 'tag-item';
+        tagEl.style.background = TAG_COLORS[index % TAG_COLORS.length];
+        tagEl.innerHTML = `<span>${tag}</span><span class="tag-close" data-index="${index}">×</span>`;
+        tagList.appendChild(tagEl);
+      });
+
+      // 绑定事件
+      bindPropertyEvents(node.id);
+    }
+
+    function bindPropertyEvents(nodeId) {
+      // 背景色
+      document.getElementById('style-fill').addEventListener('input', (e) => {
+        const node = findNode(mindmapData, nodeId);
+        if (node) {
+          node.style.fill = e.target.value;
+          render();
+          saveHistory();
+        }
+      });
+
+      // 文字颜色
+      document.getElementById('style-color').addEventListener('input', (e) => {
+        const node = findNode(mindmapData, nodeId);
+        if (node) {
+          node.style.color = e.target.value;
+          render();
+          saveHistory();
+        }
+      });
+
+      // 字体大小
+      document.getElementById('style-fontsize').addEventListener('change', (e) => {
+        const node = findNode(mindmapData, nodeId);
+        if (node) {
+          node.style.fontSize = parseInt(e.target.value) || 14;
+          render();
+          saveHistory();
+        }
+      });
+
+      // 重置样式
+      document.getElementById('btn-reset-style').addEventListener('click', () => {
+        const node = findNode(mindmapData, nodeId);
+        if (node) {
+          node.style = { fill: '', color: '', fontSize: 14 };
+          render();
+          saveHistory();
+        }
+      });
+
+      // 添加标签
+      const tagInput = document.getElementById('tag-input');
+      document.getElementById('btn-add-tag').addEventListener('click', () => {
+        addTag(nodeId, tagInput.value.trim());
+        tagInput.value = '';
+      });
+      tagInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          addTag(nodeId, tagInput.value.trim());
+          tagInput.value = '';
+        }
+      });
+
+      // 删除标签
+      document.querySelectorAll('.tag-close').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const index = parseInt(btn.dataset.index);
+          removeTag(nodeId, index);
+        });
+      });
+
+      // 备注
+      document.getElementById('note-input').addEventListener('change', (e) => {
+        const node = findNode(mindmapData, nodeId);
+        if (node) {
+          node.note = e.target.value;
+          saveHistory();
+        }
+      });
+    }
+
+    function addTag(nodeId, tagText) {
+      if (!tagText) return;
+      const node = findNode(mindmapData, nodeId);
+      if (node && !node.tags.includes(tagText)) {
+        node.tags.push(tagText);
+        render();
+        saveHistory();
+      }
+    }
+
+    function removeTag(nodeId, index) {
+      const node = findNode(mindmapData, nodeId);
+      if (node && node.tags[index]) {
+        node.tags.splice(index, 1);
+        render();
+        saveHistory();
+      }
+    }
+
+    // ========== 节点拖拽逻辑 ==========
+    function startNodeDrag(e, nodeId) {
+      if (nodeId === mindmapData.id) return; // 根节点不可拖拽
+      
+      nodeDragState = {
+        isDragging: true,
+        nodeId: nodeId,
+        startX: e.clientX,
+        startY: e.clientY,
+        hasMoved: false
+      };
+
+      const node = findNode(mindmapData, nodeId);
+      dragGhost.textContent = node.text;
+      dragGhost.style.display = 'block';
+      updateDragGhostPosition(e.clientX, e.clientY);
+
+      e.stopPropagation();
+      e.preventDefault();
+    }
+
+    function updateDragGhostPosition(x, y) {
+      dragGhost.style.left = (x + 10) + 'px';
+      dragGhost.style.top = (y + 10) + 'px';
+    }
+
+    function handleNodeDragMove(e) {
+      if (!nodeDragState.isDragging) return;
+
+      const dx = Math.abs(e.clientX - nodeDragState.startX);
+      const dy = Math.abs(e.clientY - nodeDragState.startY);
+      
+      if (!nodeDragState.hasMoved && (dx > 5 || dy > 5)) {
+        nodeDragState.hasMoved = true;
+      }
+
+      if (nodeDragState.hasMoved) {
+        updateDragGhostPosition(e.clientX, e.clientY);
+        updateDropIndicator(e);
+      }
+    }
+
+    function updateDropIndicator(e) {
+      const elements = document.elementsFromPoint(e.clientX, e.clientY);
+      const targetNodeEl = elements.find(el => el.closest('.node'));
+      
+      if (!targetNodeEl) {
+        dropIndicator.style.display = 'none';
+        return;
+      }
+
+      const targetGroup = targetNodeEl.closest('.node');
+      const targetId = targetGroup.dataset.id;
+      
+      // 不能拖到自己或自己的后代节点
+      const dragNode = findNode(mindmapData, nodeDragState.nodeId);
+      if (targetId === nodeDragState.nodeId || isDescendant(dragNode, targetId)) {
+        dropIndicator.style.display = 'none';
+        return;
+      }
+
+      const rect = targetGroup.getBoundingClientRect();
+      const containerRect = canvasContainer.getBoundingClientRect();
+      const relativeY = e.clientY - rect.top;
+      const zoneHeight = rect.height / 3;
+
+      dropIndicator.classList.remove('insert-child');
+      dropIndicator.style.display = 'block';
+      dropIndicator.style.width = NODE_WIDTH * transform.scale + 'px';
+
+      if (relativeY < zoneHeight) {
+        // 上插入
+        dropIndicator.style.left = (rect.left - containerRect.left) + 'px';
+        dropIndicator.style.top = (rect.top - containerRect.top - 1) + 'px';
+        dropIndicator.dataset.type = 'before';
+        dropIndicator.dataset.targetId = targetId;
+      } else if (relativeY > zoneHeight * 2) {
+        // 下插入
+        dropIndicator.style.left = (rect.left - containerRect.left) + 'px';
+        dropIndicator.style.top = (rect.bottom - containerRect.top - 1) + 'px';
+        dropIndicator.dataset.type = 'after';
+        dropIndicator.dataset.targetId = targetId;
+      } else {
+        // 作为子节点
+        dropIndicator.classList.add('insert-child');
+        dropIndicator.style.left = (rect.left - containerRect.left) + 'px';
+        dropIndicator.style.top = (rect.top - containerRect.top) + 'px';
+        dropIndicator.style.width = rect.width + 'px';
+        dropIndicator.style.height = rect.height + 'px';
+        dropIndicator.dataset.type = 'child';
+        dropIndicator.dataset.targetId = targetId;
+      }
+    }
+
+    function endNodeDrag() {
+      if (!nodeDragState.isDragging) return;
+
+      if (nodeDragState.hasMoved && dropIndicator.style.display === 'block') {
+        const targetId = dropIndicator.dataset.targetId;
+        const type = dropIndicator.dataset.type;
+        moveNode(nodeDragState.nodeId, targetId, type);
+      }
+
+      nodeDragState.isDragging = false;
+      nodeDragState.hasMoved = false;
+      dragGhost.style.display = 'none';
+      dropIndicator.style.display = 'none';
+    }
+
+    // 移动节点核心逻辑
+    function moveNode(dragId, targetId, position) {
+      const dragNode = findNode(mindmapData, dragId);
+      const targetNode = findNode(mindmapData, targetId);
+      if (!dragNode || !targetNode) return;
+
+      // 先从原位置移除
+      const oldParent = findParentNode(mindmapData, dragId);
+      if (!oldParent) return;
+      
+      const oldIndex = oldParent.children.findIndex(c => c.id === dragId);
+      const [removedNode] = oldParent.children.splice(oldIndex, 1);
+
+      // 插入到新位置
+      if (position === 'child') {
+        targetNode.children.push(removedNode);
+        targetNode.collapsed = false;
+      } else {
+        const newParent = findParentNode(mindmapData, targetId);
+        if (!newParent) {
+          // 目标是根节点，放回原位置
+          oldParent.children.splice(oldIndex, 0, removedNode);
+          return;
+        }
+        const targetIndex = newParent.children.findIndex(c => c.id === targetId);
+        const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
+        newParent.children.splice(insertIndex, 0, removedNode);
+      }
+
+      selectedNodeId = dragId;
+      saveHistory();
+      render();
+    }
+
+    // ========== 节点操作逻辑 ==========
+    function selectNode(id) {
+      selectedNodeId = id;
+      render();
+    }
+
+    function findNode(node, id) {
+      if (node.id === id) return node;
+      if (node.children) {
+        for (const child of node.children) {
+          const found = findNode(child, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    function findParentNode(node, id, parent = null) {
+      if (node.id === id) return parent;
+      if (node.children) {
+        for (const child of node.children) {
+          const found = findParentNode(child, id, node);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    function addChildNode(parentId) {
+      const parent = findNode(mindmapData, parentId);
+      if (!parent) return;
+
+      const newNode = createNode('新节点');
+      parent.children.push(newNode);
+      parent.collapsed = false;
+      selectedNodeId = newNode.id;
+      
+      saveHistory();
+      render();
+      startEditNode(newNode.id);
+    }
+
+    function addSiblingNode(nodeId) {
+      if (nodeId === mindmapData.id) return;
+
+      const parent = findParentNode(mindmapData, nodeId);
+      if (!parent) return;
+
+      const newNode = createNode('新节点');
+      const index = parent.children.findIndex(c => c.id === nodeId);
+      parent.children.splice(index + 1, 0, newNode);
+      selectedNodeId = newNode.id;
+      
+      saveHistory();
+      render();
+      startEditNode(newNode.id);
+    }
+
+    function deleteNode(nodeId) {
+      if (nodeId === mindmapData.id) return;
+
+      const parent = findParentNode(mindmapData, nodeId);
+      if (!parent) return;
+
+      const index = parent.children.findIndex(c => c.id === nodeId);
+      parent.children.splice(index, 1);
+      
+      selectedNodeId = parent.id;
+      saveHistory();
+      render();
+    }
+
+    function toggleCollapse(nodeId) {
+      const node = findNode(mindmapData, nodeId);
+      if (!node || !node.children || node.children.length === 0) return;
+
+      node.collapsed = !node.collapsed;
+      saveHistory();
+      render();
+    }
+
+    function updateNodeText(nodeId, newText) {
+      const node = findNode(mindmapData, nodeId);
+      if (!node) return;
+
+      node.text = newText;
+      saveHistory();
+      render();
+    }
+
+    function startEditNode(nodeId) {
+      if (isEditing) return;
+      isEditing = true;
+
+      const node = findNode(mindmapData, nodeId);
+      if (!node) return;
+
+      const nodeElement = document.querySelector(`.node[data-id="${nodeId}"]`);
+      if (!nodeElement) return;
+
+      const textElement = nodeElement.querySelector('.node-text');
+      const foreignObject = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+      foreignObject.setAttribute('width', NODE_WIDTH);
+      foreignObject.setAttribute('height', NODE_HEIGHT);
+      foreignObject.setAttribute('y', -NODE_HEIGHT / 2);
+
+      const input = document.createElement('input');
+      input.classList.add('node-input');
+      input.value = node.text;
+      input.style.color = node.style.color || 'inherit';
+      input.style.fontSize = (node.style.fontSize || 14) + 'px';
+      foreignObject.appendChild(input);
+
+      textElement.replaceWith(foreignObject);
+      input.focus();
+      input.select();
+
+      const finishEdit = () => {
+        const newText = input.value.trim() || '新节点';
+        updateNodeText(nodeId, newText);
+        isEditing = false;
+      };
+
+      input.addEventListener('blur', finishEdit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          finishEdit();
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          isEditing = false;
+          render();
+        }
+      });
+    }
+
+    // ========== 画布交互 ==========
+    function centerCanvas() {
+      const svgRect = svg.getBoundingClientRect();
+      transform.x = svgRect.width / 2 - (NODE_WIDTH + H_GAP) * transform.scale;
+      transform.y = svgRect.height / 2;
+      render();
+    }
+
+    function centerOnNode(nodeId) {
+      const node = findNode(mindmapData, nodeId);
+      if (!node) return;
+
+      const svgRect = svg.getBoundingClientRect();
+      transform.x = svgRect.width / 2 - node.x * transform.scale - NODE_WIDTH / 2 * transform.scale;
+      transform.y = svgRect.height / 2 - node.y * transform.scale;
+      render();
+    }
+
+    // 画布拖拽平移
+    canvasContainer.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.node')) return;
+      if (isEditing || nodeDragState.isDragging) return;
+      
+      isCanvasDragging = true;
+      dragStart.x = e.clientX - transform.x;
+      dragStart.y = e.clientY - transform.y;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (nodeDragState.isDragging) {
+        handleNodeDragMove(e);
+        return;
+      }
+      
+      if (!isCanvasDragging) return;
+      
+      transform.x = e.clientX - dragStart.x;
+      transform.y = e.clientY - dragStart.y;
+      canvasGroup.setAttribute(
+        'transform', 
+        `translate(${transform.x}, ${transform.y}) scale(${transform.scale})`
+      );
+    });
+
+    window.addEventListener('mouseup', () => {
+      isCanvasDragging = false;
+      endNodeDrag();
+    });
+
+    // 滚轮缩放
+    canvasContainer.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      const newScale = Math.max(0.3, Math.min(3, transform.scale + delta));
+      if (newScale === transform.scale) return;
+
+      const rect = canvasContainer.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const scaleRatio = newScale / transform.scale;
+      transform.x = mouseX - (mouseX - transform.x) * scaleRatio;
+      transform.y = mouseY - (mouseY - transform.y) * scaleRatio;
+      transform.scale = newScale;
+
+      canvasGroup.setAttribute(
+        'transform', 
+        `translate(${transform.x}, ${transform.y}) scale(${transform.scale})`
+      );
+    });
+
+    // ========== 导出功能 ==========
+    function exportJSON() {
+      const dataStr = JSON.stringify(mindmapData, null, 2);
+      downloadFile(dataStr, '思维导图.json', 'application/json');
+    }
+
+    function exportMarkdown() {
+      const md = generateMarkdown(mindmapData, 0);
+      downloadFile(md, '思维导图.md', 'text/markdown');
+    }
+
+    function generateMarkdown(node, level) {
+      let result = '#'.repeat(Math.min(level + 1, 6)) + ' ' + node.text + '\n\n';
+      if (node.note) {
+        result += '> ' + node.note + '\n\n';
+      }
+      if (node.children && !node.collapsed) {
+        node.children.forEach(child => {
+          result += generateMarkdown(child, level + 1);
+        });
+      }
+      return result;
+    }
+
+    function exportSVG() {
+      const cloneSvg = svg.cloneNode(true);
+      const canvasGroupClone = cloneSvg.querySelector('#canvas-group');
+      
+      const bbox = canvasGroup.getBBox();
+      const padding = 40;
+      
+      cloneSvg.setAttribute('width', bbox.width + padding * 2);
+      cloneSvg.setAttribute('height', bbox.height + padding * 2);
+      cloneSvg.setAttribute(
+        'viewBox', 
+        `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`
+      );
+      canvasGroupClone.setAttribute('transform', '');
+
+      const serializer = new XMLSerializer();
+      const svgStr = serializer.serializeToString(cloneSvg);
+      const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      downloadFile(URL.createObjectURL(svgBlob), '思维导图.svg', 'image/svg+xml');
+    }
+
+    function exportPNG() {
+      const cloneSvg = svg.cloneNode(true);
+      const canvasGroupClone = cloneSvg.querySelector('#canvas-group');
+      
+      const bbox = canvasGroup.getBBox();
+      const padding = 40;
+      const width = bbox.width + padding * 2;
+      const height = bbox.height + padding * 2;
+      
+      cloneSvg.setAttribute('width', width);
+      cloneSvg.setAttribute('height', height);
+      cloneSvg.setAttribute(
+        'viewBox', 
+        `${bbox.x - padding} ${bbox.y - padding} ${width} ${height}`
+      );
+      canvasGroupClone.setAttribute('transform', '');
+
+      const serializer = new XMLSerializer();
+      const svgStr = serializer.serializeToString(cloneSvg);
+      const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const scale = 2;
+        canvas.width = width * scale;
+        canvas.height = height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          const pngUrl = URL.createObjectURL(blob);
+          downloadFile(pngUrl, '思维导图.png', 'image/png');
+          URL.revokeObjectURL(url);
+          URL.revokeObjectURL(pngUrl);
+        }, 'image/png');
+      };
+      img.src = url;
+    }
+
+    function downloadFile(content, filename, type) {
+      const a = document.createElement('a');
+      a.href = content;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // ========== 键盘快捷键 ==========
+    document.addEventListener('keydown', (e) => {
+      if (isEditing) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        undo();
+        return;
+      }
+
+      if (e.ctrlKey && e.key === 'y') {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        addChildNode(selectedNodeId);
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addSiblingNode(selectedNodeId);
+        return;
+      }
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteNode(selectedNodeId);
+        return;
+      }
+
+      if (e.key === ' ') {
+        e.preventDefault();
+        toggleCollapse(selectedNodeId);
+        return;
+      }
+
+      if (e.key === 'F2') {
+        e.preventDefault();
+        startEditNode(selectedNodeId);
+        return;
+      }
+    });
+
+    // ========== 事件绑定 ==========
+    document.getElementById('btn-undo').addEventListener('click', undo);
+    document.getElementById('btn-redo').addEventListener('click', redo);
+    document.getElementById('btn-add-child').addEventListener('click', () => addChildNode(selectedNodeId));
+    document.getElementById('btn-add-sibling').addEventListener('click', () => addSiblingNode(selectedNodeId));
+    document.getElementById('btn-delete').addEventListener('click', () => deleteNode(selectedNodeId));
+    document.getElementById('btn-collapse').addEventListener('click', () => toggleCollapse(selectedNodeId));
+    document.getElementById('btn-center').addEventListener('click', centerCanvas);
+    document.getElementById('btn-export-json').addEventListener('click', exportJSON);
+    document.getElementById('btn-export-md').addEventListener('click', exportMarkdown);
+    document.getElementById('btn-export-png').addEventListener('click', exportPNG);
+    document.getElementById('btn-export-svg').addEventListener('click', exportSVG);
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      if (confirm('确定重置为示例导图吗？当前所有数据将丢失。')) {
+        localStorage.removeItem('mindmap_data');
+        location.reload();
+      }
+    });
+
+    themeSelect.addEventListener('change', (e) => {
+      applyTheme(e.target.value);
+    });
+
+    // ========== 初始化 ==========
+    function init() {
+      loadFromLocalStorage();
+      applyTheme(currentTheme);
+      saveHistory();
+      render();
+      setTimeout(centerCanvas, 0);
+    }
+
+    init();
+  </script>
+</body>
+</html>

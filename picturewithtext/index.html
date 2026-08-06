@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片隐写术工具</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .panel {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .panel-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
+      color: #2c3e50;
+    }
+    .upload-area {
+      border: 2px dashed #d9d9d9;
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 16px;
+      transition: all 0.3s;
+      background: #fafafa;
+    }
+    .upload-area:hover {
+      border-color: #409eff;
+      background: #f0f7ff;
+    }
+    .upload-area.dragover {
+      border-color: #409eff;
+      background: #ecf5ff;
+    }
+    .upload-area p {
+      color: #666;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    .upload-icon {
+      font-size: 32px;
+      color: #999;
+    }
+    .preview-box {
+      width: 100%;
+      max-height: 200px;
+      overflow: hidden;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      display: none;
+      background: #f5f5f5;
+    }
+    .preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #555;
+      font-weight: 500;
+    }
+    .form-group input[type="password"],
+    .form-group textarea,
+    .form-group input[type="file"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #dcdfe6;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: #409eff;
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #dcdfe6;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .mode-tab.active {
+      background: #409eff;
+      color: #fff;
+      border-color: #409eff;
+    }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .btn-primary {
+      background: #409eff;
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #337ecc;
+    }
+    .btn-primary:disabled {
+      background: #a0cfff;
+      cursor: not-allowed;
+    }
+    .capacity-tip {
+      font-size: 13px;
+      color: #67c23a;
+      margin-bottom: 12px;
+      padding: 8px;
+      background: #f0f9eb;
+      border-radius: 4px;
+      display: none;
+    }
+    .result-box {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      background: #f5f7fa;
+      font-size: 14px;
+      display: none;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .result-box.success {
+      background: #f0f9eb;
+      color: #67c23a;
+    }
+    .result-box.error {
+      background: #fef0f0;
+      color: #f56c6c;
+    }
+    .tip-text {
+      font-size: 12px;
+      color: #909399;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+    input[type="file"] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔒 图片隐写术工具</h1>
+    <div class="main-grid">
+      <!-- 隐藏面板 -->
+      <div class="panel">
+        <div class="panel-title">📥 隐藏数据到图片</div>
+        
+        <div class="upload-area" id="hide-upload">
+          <div class="upload-icon">🖼️</div>
+          <p>点击或拖拽上传原始图片 (仅支持PNG)</p>
+        </div>
+        <input type="file" id="hide-file-input" accept="image/png">
+        <div class="preview-box" id="hide-preview">
+          <img id="hide-preview-img" alt="预览">
+        </div>
+        <div class="capacity-tip" id="capacity-tip"></div>
+
+        <div class="mode-tabs">
+          <div class="mode-tab active" data-mode="text">隐藏文本</div>
+          <div class="mode-tab" data-mode="file">隐藏文件</div>
+        </div>
+
+        <div class="form-group" id="text-group">
+          <label>要隐藏的文本内容</label>
+          <textarea id="hide-text" placeholder="输入想要隐藏的文字..."></textarea>
+        </div>
+
+        <div class="form-group" id="file-group" style="display: none;">
+          <label>要隐藏的文件</label>
+          <input type="file" id="payload-file">
+          <div class="tip-text">建议小体积文件，文件越大越容易被检测到</div>
+        </div>
+
+        <div class="form-group">
+          <label>加密密码 (可选，建议设置)</label>
+          <input type="password" id="hide-password" placeholder="设置密码后提取时需要输入">
+        </div>
+
+        <button class="btn btn-primary" id="btn-hide" disabled>生成隐写图片并下载</button>
+        <div class="tip-text">⚠️ 仅PNG格式无损保存隐写数据，导出为JPG会导致数据丢失</div>
+      </div>
+
+      <!-- 提取面板 -->
+      <div class="panel">
+        <div class="panel-title">📤 从图片提取数据</div>
+        
+        <div class="upload-area" id="extract-upload">
+          <div class="upload-icon">🖼️</div>
+          <p>点击或拖拽上传隐写后的图片</p>
+        </div>
+        <input type="file" id="extract-file-input" accept="image/png">
+        <div class="preview-box" id="extract-preview">
+          <img id="extract-preview-img" alt="预览">
+        </div>
+
+        <div class="form-group">
+          <label>解密密码 (如果设置了密码)</label>
+          <input type="password" id="extract-password" placeholder="输入隐藏时设置的密码">
+        </div>
+
+        <button class="btn btn-primary" id="btn-extract" disabled>提取隐藏数据</button>
+        
+        <div class="result-box" id="extract-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== 全局变量 ==========
+    let hideImageData = null;
+    let extractImageData = null;
+    let hideMode = 'text';
+    let payloadFile = null;
+
+    // DOM元素
+    const hideUpload = document.getElementById('hide-upload');
+    const hideFileInput = document.getElementById('hide-file-input');
+    const hidePreview = document.getElementById('hide-preview');
+    const hidePreviewImg = document.getElementById('hide-preview-img');
+    const capacityTip = document.getElementById('capacity-tip');
+    const btnHide = document.getElementById('btn-hide');
+    const textGroup = document.getElementById('text-group');
+    const fileGroup = document.getElementById('file-group');
+    const payloadFileInput = document.getElementById('payload-file');
+
+    const extractUpload = document.getElementById('extract-upload');
+    const extractFileInput = document.getElementById('extract-file-input');
+    const extractPreview = document.getElementById('extract-preview');
+    const extractPreviewImg = document.getElementById('extract-preview-img');
+    const btnExtract = document.getElementById('btn-extract');
+    const extractResult = document.getElementById('extract-result');
+
+    // ========== 上传交互 ==========
+    hideUpload.addEventListener('click', () => hideFileInput.click());
+    hideFileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) loadImage(e.target.files[0], 'hide');
+    });
+    setupDragDrop(hideUpload, 'hide');
+
+    extractUpload.addEventListener('click', () => extractFileInput.click());
+    extractFileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) loadImage(e.target.files[0], 'extract');
+    });
+    setupDragDrop(extractUpload, 'extract');
+
+    function setupDragDrop(element, type) {
+      element.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        element.classList.add('dragover');
+      });
+      element.addEventListener('dragleave', () => {
+        element.classList.remove('dragover');
+      });
+      element.addEventListener('drop', (e) => {
+        e.preventDefault();
+        element.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+          loadImage(file, type);
+        }
+      });
+    }
+
+    function loadImage(file, type) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+          if (type === 'hide') {
+            hideImageData = imageData;
+            hidePreviewImg.src = e.target.result;
+            hidePreview.style.display = 'block';
+            const capacity = Math.floor(imageData.data.length / 8) - 64; // 减去头部开销
+            capacityTip.textContent = `✅ 图片最大可隐藏约 ${formatSize(capacity)} 的数据`;
+            capacityTip.style.display = 'block';
+            btnHide.disabled = false;
+          } else {
+            extractImageData = imageData;
+            extractPreviewImg.src = e.target.result;
+            extractPreview.style.display = 'block';
+            btnExtract.disabled = false;
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+      return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+    }
+
+    // ========== 模式切换 ==========
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        hideMode = tab.dataset.mode;
+        textGroup.style.display = hideMode === 'text' ? 'block' : 'none';
+        fileGroup.style.display = hideMode === 'file' ? 'block' : 'none';
+      });
+    });
+
+    payloadFileInput.addEventListener('change', (e) => {
+      payloadFile = e.target.files[0];
+    });
+
+    // ========== 加密解密工具 ==========
+    async function deriveKey(password, salt) {
+      const encoder = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw', encoder.encode(password),
+        { name: 'PBKDF2' }, false,
+        ['deriveBits', 'deriveKey']
+      );
+      return crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    async function encryptData(data, password) {
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await deriveKey(password, salt);
+      
+      const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        data
+      );
+      
+      // 拼接: salt(16) + iv(12) + 密文
+      const result = new Uint8Array(16 + 12 + encrypted.byteLength);
+      result.set(salt, 0);
+      result.set(iv, 16);
+      result.set(new Uint8Array(encrypted), 28);
+      return result;
+    }
+
+    async function decryptData(encryptedData, password) {
+      try {
+        const salt = encryptedData.slice(0, 16);
+        const iv = encryptedData.slice(16, 28);
+        const ciphertext = encryptedData.slice(28);
+        const key = await deriveKey(password, salt);
+        
+        const decrypted = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv: iv },
+          key,
+          ciphertext
+        );
+        return new Uint8Array(decrypted);
+      } catch (e) {
+        throw new Error('密码错误或数据损坏');
+      }
+    }
+
+    // ========== LSB隐写核心算法 ==========
+    function hideDataInImage(imageData, dataBytes) {
+      const pixels = imageData.data;
+      const totalBits = dataBytes.length * 8;
+      
+      if (totalBits > pixels.length) {
+        throw new Error('数据过大，超出图片可隐藏容量');
+      }
+
+      // 前32位写入数据长度
+      const lengthBits = new Array(32);
+      for (let i = 0; i < 32; i++) {
+        lengthBits[31 - i] = (dataBytes.length >> i) & 1;
+      }
+
+      let bitIndex = 0;
+      
+      // 写入长度
+      for (let i = 0; i < 32; i++) {
+        pixels[bitIndex] = (pixels[bitIndex] & 0xFE) | lengthBits[i];
+        bitIndex++;
+      }
+
+      // 写入数据
+      for (let i = 0; i < dataBytes.length; i++) {
+        for (let j = 0; j < 8; j++) {
+          const bit = (dataBytes[i] >> (7 - j)) & 1;
+          pixels[bitIndex] = (pixels[bitIndex] & 0xFE) | bit;
+          bitIndex++;
+        }
+      }
+
+      return imageData;
+    }
+
+    function extractDataFromImage(imageData) {
+      const pixels = imageData.data;
+      let bitIndex = 0;
+
+      // 读取32位长度
+      let dataLength = 0;
+      for (let i = 0; i < 32; i++) {
+        dataLength = (dataLength << 1) | (pixels[bitIndex] & 1);
+        bitIndex++;
+      }
+
+      if (dataLength <= 0 || dataLength > pixels.length / 8) {
+        throw new Error('未检测到隐藏数据或图片已损坏');
+      }
+
+      // 读取数据
+      const dataBytes = new Uint8Array(dataLength);
+      for (let i = 0; i < dataLength; i++) {
+        let byte = 0;
+        for (let j = 0; j < 8; j++) {
+          byte = (byte << 1) | (pixels[bitIndex] & 1);
+          bitIndex++;
+        }
+        dataBytes[i] = byte;
+      }
+
+      return dataBytes;
+    }
+
+    // ========== 隐藏功能 ==========
+    btnHide.addEventListener('click', async () => {
+      try {
+        btnHide.disabled = true;
+        btnHide.textContent = '处理中...';
+
+        let payloadData;
+        let filename = '';
+
+        if (hideMode === 'text') {
+          const text = document.getElementById('hide-text').value;
+          if (!text.trim()) throw new Error('请输入要隐藏的文本');
+          const encoder = new TextEncoder();
+          const textBytes = encoder.encode(text);
+          // 标记类型: 0=文本, 1=文件 + 文件名长度 + 文件名 + 内容
+          payloadData = new Uint8Array(1 + textBytes.length);
+          payloadData[0] = 0; // 文本类型
+          payloadData.set(textBytes, 1);
+        } else {
+          if (!payloadFile) throw new Error('请选择要隐藏的文件');
+          const arrayBuffer = await payloadFile.arrayBuffer();
+          const fileBytes = new Uint8Array(arrayBuffer);
+          const filenameBytes = new TextEncoder().encode(payloadFile.name);
+          
+          payloadData = new Uint8Array(1 + 2 + filenameBytes.length + fileBytes.length);
+          payloadData[0] = 1; // 文件类型
+          payloadData[1] = filenameBytes.length >> 8;
+          payloadData[2] = filenameBytes.length & 0xFF;
+          payloadData.set(filenameBytes, 3);
+          payloadData.set(fileBytes, 3 + filenameBytes.length);
+        }
+
+        const password = document.getElementById('hide-password').value;
+        let finalData;
+        
+        if (password) {
+          finalData = await encryptData(payloadData, password);
+        } else {
+          finalData = payloadData;
+        }
+
+        const newImageData = hideDataInImage(hideImageData, finalData);
+        
+        // 导出图片
+        const canvas = document.createElement('canvas');
+        canvas.width = hideImageData.width;
+        canvas.height = hideImageData.height;
+        const ctx = canvas.getContext('2d');
+        ctx.putImageData(newImageData, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'steganography.png';
+          a.click();
+          URL.revokeObjectURL(url);
+          
+          btnHide.textContent = '生成隐写图片并下载';
+          btnHide.disabled = false;
+        }, 'image/png');
+
+      } catch (e) {
+        alert('错误: ' + e.message);
+        btnHide.textContent = '生成隐写图片并下载';
+        btnHide.disabled = false;
+      }
+    });
+
+    // ========== 提取功能 ==========
+    btnExtract.addEventListener('click', async () => {
+      try {
+        btnExtract.disabled = true;
+        btnExtract.textContent = '提取中...';
+        extractResult.style.display = 'none';
+
+        const rawData = extractDataFromImage(extractImageData);
+        const password = document.getElementById('extract-password').value;
+        
+        let payloadData;
+        try {
+          if (password) {
+            payloadData = await decryptData(rawData, password);
+          } else {
+            payloadData = rawData;
+          }
+        } catch (e) {
+          throw new Error('解密失败，请检查密码是否正确，或图片未加密');
+        }
+
+        const type = payloadData[0];
+        
+        if (type === 0) {
+          // 文本
+          const text = new TextDecoder().decode(payloadData.slice(1));
+          extractResult.className = 'result-box success';
+          extractResult.textContent = '✅ 提取成功，隐藏文本：\n\n' + text;
+          extractResult.style.display = 'block';
+        } else if (type === 1) {
+          // 文件
+          const filenameLen = (payloadData[1] << 8) | payloadData[2];
+          const filename = new TextDecoder().decode(payloadData.slice(3, 3 + filenameLen));
+          const fileData = payloadData.slice(3 + filenameLen);
+          
+          const blob = new Blob([fileData]);
+          const url = URL.createObjectURL(blob);
+          
+          extractResult.className = 'result-box success';
+          extractResult.innerHTML = `✅ 提取成功，文件：${filename} <br><br> <a href="${url}" download="${filename}" style="color:#409eff">点击下载文件</a>`;
+          extractResult.style.display = 'block';
+        }
+
+        btnExtract.textContent = '提取隐藏数据';
+        btnExtract.disabled = false;
+
+      } catch (e) {
+        extractResult.className = 'result-box error';
+        extractResult.textContent = '❌ 提取失败：' + e.message;
+        extractResult.style.display = 'block';
+        btnExtract.textContent = '提取隐藏数据';
+        btnExtract.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第一人称迷宫探险</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a1a2e;
+      color: #eee;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 16px;
+      color: #e94560;
+      text-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+    }
+    .game-container {
+      position: relative;
+      border: 3px solid #16213e;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    }
+    #game-canvas {
+      display: block;
+      background: #0f0f23;
+      cursor: crosshair;
+    }
+    .hud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(0,0,0,0.7);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .hud .time {
+      color: #e94560;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .controls {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .control-group input {
+      width: 80px;
+      padding: 6px 8px;
+      background: #16213e;
+      border: 1px solid #0f3460;
+      color: #eee;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    button {
+      padding: 8px 16px;
+      background: #e94560;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #d63850;
+    }
+    .tip {
+      margin-top: 12px;
+      color: #7a7a9a;
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .win-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(22, 33, 62, 0.95);
+      padding: 30px 40px;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+      border: 2px solid #e94560;
+      box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+    }
+    .win-modal h2 {
+      color: #e94560;
+      margin-bottom: 12px;
+    }
+    .win-modal .final-time {
+      font-size: 24px;
+      margin: 16px 0;
+      color: #fff;
+    }
+    .minimap {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0,0,0,0.7);
+      padding: 8px;
+      border-radius: 4px;
+    }
+    #minimap-canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏰 迷宫探险</h1>
+  
+  <div class="game-container">
+    <canvas id="game-canvas" width="800" height="500"></canvas>
+    
+    <div class="hud">
+      <div class="time" id="timer">00:00</div>
+      <div>迷宫大小: <span id="map-size">15x15</span></div>
+    </div>
+
+    <div class="minimap">
+      <canvas id="minimap-canvas" width="120" height="120"></canvas>
+    </div>
+
+    <div class="win-modal" id="win-modal">
+      <h2>🎉 恭喜通关！</h2>
+      <p>你找到了出口</p>
+      <div class="final-time" id="final-time">00:00</div>
+      <button onclick="restartGame()">再来一局</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>迷宫大小:</label>
+      <input type="number" id="size-input" value="15" min="9" max="31" step="2">
+    </div>
+    <div class="control-group">
+      <label>种子:</label>
+      <input type="text" id="seed-input" placeholder="随机">
+    </div>
+    <button id="btn-generate">生成新迷宫</button>
+    <button id="btn-toggle-view">切换视角</button>
+  </div>
+
+  <div class="tip">
+    WASD 移动 | ← → 转向 | 鼠标点击画布后可用鼠标转向<br>
+    找到绿色出口即可通关，红色方块是你的位置
+  </div>
+
+  <script>
+    // ========== 画布与渲染 ==========
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const minimapCanvas = document.getElementById('minimap-canvas');
+    const minimapCtx = minimapCanvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // ========== 游戏状态 ==========
+    let map = [];
+    let mapSize = 15;
+    let player = { x: 1.5, y: 1.5, angle: 0, speed: 0.05, rotSpeed: 0.03 };
+    let FOV = Math.PI / 3;
+    let numRays = W;
+    let isFirstPerson = true;
+    let gameStartTime = 0;
+    let timerInterval = null;
+    let gameWon = false;
+    let exitPos = { x: 0, y: 0 };
+    let keys = {};
+    let mouseControl = false;
+
+    // ========== 伪随机数生成器（种子支持） ==========
+    function seededRandom(seed) {
+      let s = seed;
+      return function() {
+        s = (s * 9301 + 49297) % 233280;
+        return s / 233280;
+      };
+    }
+    let random = Math.random;
+
+    // ========== 迷宫生成 (DFS回溯法) ==========
+    function generateMaze(size) {
+      // 初始化全是墙
+      const maze = [];
+      for (let y = 0; y < size; y++) {
+        maze[y] = [];
+        for (let x = 0; x < size; x++) {
+          maze[y][x] = 1;
+        }
+      }
+
+      const stack = [];
+      const startX = 1;
+      const startY = 1;
+      maze[startY][startX] = 0;
+      stack.push([startX, startY]);
+
+      const directions = [
+        [0, -2], [0, 2], [-2, 0], [2, 0]
+      ];
+
+      while (stack.length > 0) {
+        const [cx, cy] = stack[stack.length - 1];
+        
+        // 打乱方向
+        const shuffled = [...directions].sort(() => random() - 0.5);
+        let found = false;
+
+        for (const [dx, dy] of shuffled) {
+          const nx = cx + dx;
+          const ny = cy + dy;
+          
+          if (nx > 0 && nx < size - 1 && ny > 0 && ny < size - 1 && maze[ny][nx] === 1) {
+            maze[ny][nx] = 0;
+            maze[cy + dy/2][cx + dx/2] = 0;
+            stack.push([nx, ny]);
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          stack.pop();
+        }
+      }
+
+      // 设置出口（最远的角落）
+      exitPos.x = size - 2;
+      exitPos.y = size - 2;
+      maze[exitPos.y][exitPos.x] = 2; // 2表示出口
+
+      return maze;
+    }
+
+    // ========== 光线投射核心算法 ==========
+    function castRay(angle) {
+      const sin = Math.sin(angle);
+      const cos = Math.cos(angle);
+
+      let distance = 0;
+      const maxDist = 20;
+      const step = 0.02;
+
+      while (distance < maxDist) {
+        const x = player.x + cos * distance;
+        const y = player.y + sin * distance;
+
+        const mapX = Math.floor(x);
+        const mapY = Math.floor(y);
+
+        if (mapX < 0 || mapX >= mapSize || mapY < 0 || mapY >= mapSize) {
+          return { distance: maxDist, side: 0, type: 1 };
+        }
+
+        if (map[mapY][mapX] === 1) {
+          // 判断击中的是横向还是纵向墙
+          const prevX = x - cos * step;
+          const prevY = y - sin * step;
+          const hitX = Math.floor(prevX) !== mapX;
+          return { distance, side: hitX ? 0 : 1, type: 1 };
+        }
+
+        if (map[mapY][mapX] === 2) {
+          return { distance, side: 0, type: 2 };
+        }
+
+        distance += step;
+      }
+
+      return { distance: maxDist, side: 0, type: 0 };
+    }
+
+    // ========== 渲染第一人称视角 ==========
+    function renderFirstPerson() {
+      // 天空渐变
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H / 2);
+      skyGrad.addColorStop(0, '#0a0a1a');
+      skyGrad.addColorStop(1, '#1a1a3a');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, H / 2);
+
+      // 地面渐变
+      const floorGrad = ctx.createLinearGradient(0, H / 2, 0, H);
+      floorGrad.addColorStop(0, '#1a1a2a');
+      floorGrad.addColorStop(1, '#0a0a1a');
+      ctx.fillStyle = floorGrad;
+      ctx.fillRect(0, H / 2, W, H / 2);
+
+      // 绘制每条射线
+      for (let i = 0; i < numRays; i++) {
+        const rayAngle = player.angle - FOV / 2 + (i / numRays) * FOV;
+        const ray = castRay(rayAngle);
+        
+        // 鱼眼修正
+        const correctedDist = ray.distance * Math.cos(rayAngle - player.angle);
+        
+        // 墙壁高度
+        const wallHeight = Math.min(H * 2, H / correctedDist);
+        const wallTop = (H - wallHeight) / 2;
+        
+        // 墙壁颜色，纵向墙更暗增加立体感
+        let brightness = Math.max(0, 1 - correctedDist / 10);
+        let r, g, b;
+        
+        if (ray.type === 2) {
+          // 出口 - 绿色发光
+          r = Math.floor(100 * brightness);
+          g = Math.floor(255 * brightness);
+          b = Math.floor(100 * brightness);
+        } else {
+          if (ray.side === 0) {
+            r = Math.floor(120 * brightness);
+            g = Math.floor(100 * brightness);
+            b = Math.floor(140 * brightness);
+          } else {
+            r = Math.floor(90 * brightness);
+            g = Math.floor(70 * brightness);
+            b = Math.floor(110 * brightness);
+          }
+        }
+
+        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        ctx.fillRect(i, wallTop, 1, wallHeight);
+      }
+
+      // 手电筒光晕效果
+      const vignette = ctx.createRadialGradient(W/2, H/2, 50, W/2, H/2, W * 0.7);
+      vignette.addColorStop(0, 'rgba(0,0,0,0)');
+      vignette.addColorStop(1, 'rgba(0,0,0,0.85)');
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // ========== 渲染上帝视角 ==========
+    function renderTopDown() {
+      const cellSize = Math.min(W, H) / mapSize;
+      ctx.fillStyle = '#0f0f23';
+      ctx.fillRect(0, 0, W, H);
+
+      for (let y = 0; y < mapSize; y++) {
+        for (let x = 0; x < mapSize; x++) {
+          if (map[y][x] === 1) {
+            ctx.fillStyle = '#3a3a5a';
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
+          } else if (map[y][x] === 2) {
+            ctx.fillStyle = '#67c23a';
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
+          }
+        }
+      }
+
+      // 玩家
+      ctx.fillStyle = '#e94560';
+      ctx.beginPath();
+      ctx.arc(player.x * cellSize, player.y * cellSize, cellSize * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 视线方向
+      ctx.strokeStyle = '#e94560';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(player.x * cellSize, player.y * cellSize);
+      ctx.lineTo(
+        (player.x + Math.cos(player.angle) * 2) * cellSize,
+        (player.y + Math.sin(player.angle) * 2) * cellSize
+      );
+      ctx.stroke();
+    }
+
+    // ========== 小地图渲染 ==========
+    function renderMinimap() {
+      const cellSize = minimapCanvas.width / mapSize;
+      minimapCtx.fillStyle = '#000';
+      minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+      for (let y = 0; y < mapSize; y++) {
+        for (let x = 0; x < mapSize; x++) {
+          if (map[y][x] === 1) {
+            minimapCtx.fillStyle = '#444';
+          } else if (map[y][x] === 2) {
+            minimapCtx.fillStyle = '#67c23a';
+          } else {
+            minimapCtx.fillStyle = '#111';
+          }
+          minimapCtx.fillRect(x * cellSize, y * cellSize, cellSize - 0.5, cellSize - 0.5);
+        }
+      }
+
+      // 玩家点
+      minimapCtx.fillStyle = '#e94560';
+      minimapCtx.beginPath();
+      minimapCtx.arc(player.x * cellSize, player.y * cellSize, cellSize * 0.4, 0, Math.PI * 2);
+      minimapCtx.fill();
+    }
+
+    // ========== 移动与碰撞检测 ==========
+    function canMove(x, y) {
+      const margin = 0.2;
+      const checks = [
+        [x - margin, y - margin],
+        [x + margin, y - margin],
+        [x - margin, y + margin],
+        [x + margin, y + margin]
+      ];
+      
+      for (const [cx, cy] of checks) {
+        const mx = Math.floor(cx);
+        const my = Math.floor(cy);
+        if (mx < 0 || mx >= mapSize || my < 0 || my >= mapSize) return false;
+        if (map[my][mx] === 1) return false;
+      }
+      return true;
+    }
+
+    function checkWin() {
+      const mx = Math.floor(player.x);
+      const my = Math.floor(player.y);
+      if (map[my][mx] === 2 && !gameWon) {
+        gameWon = true;
+        clearInterval(timerInterval);
+        document.getElementById('final-time').textContent = document.getElementById('timer').textContent;
+        document.getElementById('win-modal').style.display = 'block';
+      }
+    }
+
+    // ========== 游戏循环 ==========
+    function gameLoop() {
+      if (!gameWon) {
+        // 处理输入
+        if (keys['KeyW'] || keys['ArrowUp']) {
+          const nx = player.x + Math.cos(player.angle) * player.speed;
+          const ny = player.y + Math.sin(player.angle) * player.speed;
+          if (canMove(nx, player.y)) player.x = nx;
+          if (canMove(player.x, ny)) player.y = ny;
+        }
+        if (keys['KeyS'] || keys['ArrowDown']) {
+          const nx = player.x - Math.cos(player.angle) * player.speed;
+          const ny = player.y - Math.sin(player.angle) * player.speed;
+          if (canMove(nx, player.y)) player.x = nx;
+          if (canMove(player.x, ny)) player.y = ny;
+        }
+        if (keys['KeyA']) {
+          const nx = player.x + Math.cos(player.angle - Math.PI/2) * player.speed;
+          const ny = player.y + Math.sin(player.angle - Math.PI/2) * player.speed;
+          if (canMove(nx, player.y)) player.x = nx;
+          if (canMove(player.x, ny)) player.y = ny;
+        }
+        if (keys['KeyD']) {
+          const nx = player.x + Math.cos(player.angle + Math.PI/2) * player.speed;
+          const ny = player.y + Math.sin(player.angle + Math.PI/2) * player.speed;
+          if (canMove(nx, player.y)) player.x = nx;
+          if (canMove(player.x, ny)) player.y = ny;
+        }
+        if (keys['ArrowLeft']) {
+          player.angle -= player.rotSpeed;
+        }
+        if (keys['ArrowRight']) {
+          player.angle += player.rotSpeed;
+        }
+
+        checkWin();
+      }
+
+      // 渲染
+      if (isFirstPerson) {
+        renderFirstPerson();
+      } else {
+        renderTopDown();
+      }
+      renderMinimap();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // ========== 计时器 ==========
+    function startTimer() {
+      gameStartTime = Date.now();
+      timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const secs = String(elapsed % 60).padStart(2, '0');
+        document.getElementById('timer').textContent = `${mins}:${secs}`;
+      }, 1000);
+    }
+
+    // ========== 游戏初始化 ==========
+    function initGame() {
+      gameWon = false;
+      document.getElementById('win-modal').style.display = 'none';
+      
+      const size = parseInt(document.getElementById('size-input').value) || 15;
+      mapSize = size % 2 === 0 ? size + 1 : size; // 保证奇数
+      document.getElementById('map-size').textContent = `${mapSize}x${mapSize}`;
+      
+      const seedStr = document.getElementById('seed-input').value;
+      if (seedStr) {
+        let seed = 0;
+        for (let i = 0; i < seedStr.length; i++) {
+          seed = seed * 31 + seedStr.charCodeAt(i);
+        }
+        random = seededRandom(Math.abs(seed));
+      } else {
+        random = Math.random;
+      }
+
+      map = generateMaze(mapSize);
+      
+      // 玩家初始位置
+      player.x = 1.5;
+      player.y = 1.5;
+      player.angle = 0;
+
+      // 重置计时器
+      if (timerInterval) clearInterval(timerInterval);
+      startTimer();
+    }
+
+    function restartGame() {
+      initGame();
+    }
+
+    // ========== 输入事件 ==========
+    document.addEventListener('keydown', (e) => {
+      keys[e.code] = true;
+    });
+    document.addEventListener('keyup', (e) => {
+      keys[e.code] = false;
+    });
+
+    // 鼠标转向
+    canvas.addEventListener('click', () => {
+      mouseControl = !mouseControl;
+      canvas.style.cursor = mouseControl ? 'none' : 'crosshair';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!mouseControl || gameWon) return;
+      const rect = canvas.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const delta = e.clientX - centerX;
+      player.angle += delta * 0.002;
+      
+      // 鼠标回到中心
+      if (Math.abs(delta) > 10) {
+        const element = document.documentElement;
+        if (element.requestPointerLock) {
+          canvas.requestPointerLock();
+        }
+      }
+    });
+
+    // 按钮事件
+    document.getElementById('btn-generate').addEventListener('click', initGame);
+    document.getElementById('btn-toggle-view').addEventListener('click', () => {
+      isFirstPerson = !isFirstPerson;
+    });
+
+    // 启动
+    initGame();
+    gameLoop();
+  </script>
+</body>
+</html>
